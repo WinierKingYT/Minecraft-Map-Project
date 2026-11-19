@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 0.10.0 — 2026-11-19 (Faz 8: doğal dil komutu)
+- `terrain_engine/intent.py`: kural tabanlı niyet derleyici (model çağrısı yok, deterministik). Türkçe/İngilizce istek →
+  plan `{name, preset, size, overrides, regions, action, source?, box?}`; her plan `params.load` ile doğrulanır.
+  Boyut/seed/ad, tema → preset (öncelik: fantastik > nehir vadisi > dağlık vadi > kayalık > orman > ova; diğer temalar
+  yalnız "tat" farkı ekler), yön → `half`/`box`/`circle` bölgesi, şiddet kelimeleri → parametre deltaları (sınırlara kırpılır),
+  "mevcut haritamı geliştir" → `action: edit`. Tanınmayanlar `unmatched`, eksikler `needs`, kırpmalar `warnings`.
+- Revizyon: `base_plan` ya da `exports/plans/<name>.json` geçmişindeki son plan; aynı yöndeki bölge değiştirilir,
+  genel yumuşatma bölgelere de uygulanır, "geçişleri yumuşat" blend ×2 (en az 64).
+- CLI `plan "<istek>" [--name] [--base] [--build] [--verify]`; MCP `plan_terrain`, `build_from_plan` (edit planı → `edit_world`,
+  `ingame_tour` bayrağı); skill `.claude/skills/terrain/SKILL.md`. `cli.cmd_generate` → ortak `_run` (davranış aynı).
+- Uçtan uca: "256×256 … ortasında nehir olan dağlık vadi" + "batı tarafına orman, doğusuna kayalık arazi ekle" →
+  `nl_phase8` 14 sn (üretim + WP + verify), verify kapsama %100, yükseklik ±1 %100, sunucu 52/52.
+- Testler: `tests/test_intent.py` (18).
+
 ## 0.9.0 — 2026-11-19 (Faz 7: oyun içi kontrol)
 - Güvenlik: `name` yalnız `[A-Za-z0-9_-]{1,64}` (exports altında rmtree edilen klasör adı; yol/`..` reddedilir). MCP `edit_world` çıktısı yalnız `exports/edits/<ad>`; kaynak `level.dat` içermeli.
 - Oyunda görülen: yamaçlar çıplak gri taş + düzenli yatay çizgiler (WP `Rock`/`Stone mix` yüksekliğe göre katmanlı karışım),

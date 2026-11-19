@@ -193,6 +193,36 @@ def edit_world(source: str, out: str, box: list[int], preset: str | None = None,
     return run(str(src), str(dest), box, preset, overrides, blend)
 
 
+# ---- natural language (Phase 8): rule-based plan, AI resolves only `unmatched` / `needs` ----------------------------
+@_tool
+def plan_terrain(request: str, base_plan: dict | None = None, name: str | None = None) -> dict:
+    """Turkish/English terrain request -> {plan, unmatched, needs, warnings, explanation} without any AI call.
+    Revision: pass base_plan, or a `name` whose history (exports/plans/<name>.json) holds the last plan.
+    Fix only what `unmatched`/`needs` lists (edit the plan JSON), then build_from_plan."""
+    from terrain_engine import intent
+    return intent.plan(request, base_plan, name)
+
+
+@_tool
+def build_from_plan(plan: dict, export_world: bool = False, verify: bool = False, ingame_tour: bool = False) -> dict:
+    """Build a plan: action=generate -> generate (+ export/verify/in-game tour paths); action=edit -> edit_world
+    on plan.source / plan.box into exports/edits/<plan.name>."""
+    from terrain_engine import intent
+    plan = intent.check_plan(plan)
+    if plan["action"] == "edit":
+        missing = [k for k in ("source", "box") if not plan.get(k)]
+        if missing:
+            raise ValueError(f"edit plan needs {missing} (source = world folder with level.dat, box = [x0,z0,x1,z1])")
+        o = {k: v for k, v in intent.overrides_of(plan).items() if k not in ("width", "length", "name")}
+        return edit_world(plan["source"], plan["name"], plan["box"], plan["preset"], o)
+    intent.params_of(plan)  # fail fast with the param error before any work
+    res = generate(plan["preset"], intent.overrides_of(plan), export_world=export_world or ingame_tour, verify=verify)
+    if ingame_tour:
+        tour = globals()["ingame_tour"]  # the flag shadows the tool name
+        res["tour"] = [s["path"] for s in json.loads(tour(res["out"])[-1])]
+    return res
+
+
 # ---- live dev client (bridge/, Phase 11) -------------------------------------------------------------------------
 _game = BC.Game()
 TOUR_THUMB_W = 512

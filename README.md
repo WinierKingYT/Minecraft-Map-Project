@@ -90,6 +90,24 @@ Var olan bir 1.21.x dünyasının bir kutusunu motorla yeniden şekillendirir; s
 `params.json`, `manifest.json`, `previews/`, `worldpainter/*.world`, `world/<name>/` (Minecraft dünyası),
 `verification.json`, `server_load_test.json`.
 
+## Doğal dil komutu (Faz 8)
+
+```powershell
+.\.venv\Scripts\python -m terrain_engine plan "256×256, ortasında nehir olan dağlık bir vadi oluştur" --name vadim
+.\.venv\Scripts\python -m terrain_engine plan "batı tarafına orman, doğusuna kayalık arazi ekle" --name vadim --verify
+```
+
+- Kural tabanlı (AI çağrısı yok, deterministik) `terrain_engine/intent.py`: istek → plan JSON
+  `{name, preset, size, overrides, regions, action, source?, box?}`. Türkçe ekler/harfler (ı/ş/ğ/ü/ö/ç) katlanır, kök eşleşmesi.
+- Tanınan: boyut (`256x256`, `1k`, `4096`; 16'nın katına yuvarlanır, [16, 16384]'e kırpılır → `warnings`), seed (`seed 42`),
+  ad (`name: x`); tema → preset (dağlık vadi, nehir vadisi, orman/tepe, kayalık/uçurum, ova/çayır, fantastik); yön
+  (batı/doğu/kuzey/güney → `half`, kuzeydoğu vb. → `box`, orta → `circle`; "ortasında nehir" = nehir konumu);
+  şiddet: daha yüksek/alçak dağ, daha az/çok kaya, yoğun/seyrek orman, doğal/yumuşat (erozyon+hidrolik, "geçiş" → blend ×2),
+  keskin/engebeli, düzleştir, nehir yok/geniş/dar, mağara (var/yok), kar (çok/az/yok); "mevcut haritamı geliştir" → `action: edit`.
+- Tanınmayan cümle parçaları `unmatched`, eksik girdiler (`source`, `box`, `preset`) `needs` içinde döner; çağıran AI yalnız onları doldurur.
+- `--name`: `exports/plans/<name>.json` geçmişi; aynı adla sonraki istek son planın üstüne revizyon olarak uygulanır (`--base plan.json` de olur).
+- `--build` üretir, `--verify` dışa aktarıp doğrular. MCP: `plan_terrain` → `build_from_plan`; Claude Code skill: `.claude/skills/terrain/SKILL.md`.
+
 ## Canlı oyun köprüsü (Faz 11)
 
 Ajan Minecraft'ı kendisi açar, test dünyasını açar, kamerayı konumlar ve ekran görüntüsü alır:
@@ -109,12 +127,13 @@ Ajan Minecraft'ı kendisi açar, test dünyasını açar, kamerayı konumlar ve 
 
 | Klasör | İçerik |
 |---|---|
-| `terrain_engine/` | noise (Perlin/fBm/ridged/warp), generator (vadi, nehir, termal erozyon, yüzey, ağaç), hydraulic (global damla erozyonu), regions (bölge maskeleri), export+cache, WorldPainter köprüsü, dünya doğrulayıcı, CLI |
+| `terrain_engine/` | noise (Perlin/fBm/ridged/warp), generator (vadi, nehir, termal erozyon, yüzey, ağaç), hydraulic (global damla erozyonu), regions (bölge maskeleri), intent (doğal dil → plan), export+cache, WorldPainter köprüsü, dünya doğrulayıcı, CLI |
 | `presets/` | mountain_valley, forest_hills, rocky_cliffs, river_valley, natural_plains, fantasy_forest_valley, west_forest_east_rocky |
 | `scripts/` | dünya kurulum, Axiom mod seti aç/kapa, MC sunucu yükleme testi |
 | `axiom/` | Lua Script Brush presetleri + `instance/mods` (Fabric API + Axiom 6.1.5) |
 | `worldpainter/`, `heightmaps/`, `previews/` | ilk test haritasının kopyaları |
 | `tools/` | WorldPainter 2.27.1 (portable) ve indirilen jar'lar |
+| `.claude/skills/terrain/` | Claude Code skill'i: doğal dil → `plan_terrain` → `build_from_plan` |
 | `agent/` | AI ajanı için düşük token iş akışı; MCP sunucusu `agent/mcp_server.py` (`.mcp.json`, bkz. `agent/AGENT.md`); oyun sürücüsü `bridge_client.py` |
 | `bridge/` | Fabric 1.21.4 köprü modu (Loom projesi; `run/` = geliştirme istemcisinin oyun klasörü) |
 | `docs/` | WorldPainter/Axiom notları, Bridge/MCP tasarımı |

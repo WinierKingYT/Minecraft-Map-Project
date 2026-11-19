@@ -58,7 +58,10 @@ MC 1.21.4 sunucu yükleme testi, kenar sönümü + harita dışı düz okyanus, 
   Sonuç (v0.9.0): 3 preset (256²) önce/sonra turu, `previews/phase7/`; çizgili çıplak kaya → saf blok karışımı + daha çok çimen,
   kıyı duvarı → kumsal/kayalık kıyı karışımı, deniz 10 blok, "Not a string" düzeldi. 4096² oyun içi turu yapılmadı.
   Kalan: en dik yamaçlar hâlâ geniş gri yüzeyler (geometri; Faz 9'daki dik yamaç işi).
-- `[ ]` **Faz 8 — doğal dil komutu:** "batıya orman ekle" → `regions` JSON → MCP `generate`/`edit_world`; tek komut/skill.
+- `[x]` **Faz 8 — doğal dil komutu:** "batıya orman ekle" → `regions` JSON → MCP `generate`/`edit_world`; tek komut/skill.
+  Sonuç (v0.10.0): kural tabanlı `terrain_engine/intent.py` (AI yok), `plan` CLI, MCP `plan_terrain`/`build_from_plan`, skill
+  `.claude/skills/terrain`; tanınmayan → `unmatched`/`needs`. Uçtan uca: örnek 1 + revizyon "batıya orman, doğuya kayalık" →
+  verify %100, sunucu 52/52.
 - `[ ]` **Faz 9 — görsel kalite:** nehir kolları ve göller, 256² dik yamaç p90'ı, özel ağaç objeleri, bitki `.layer` dosyaları.
 - `[ ]` **Faz 10 — edit-world v2:** düzenlenen alana ağaç/biyom yerleştirme, mağara tavanı koruması.
 - `[ ]` **Faz 12 — yapılar (sonra):** ev, kale, köy, dungeon. Şu an yalnızca arazi.
@@ -78,3 +81,4 @@ MC 1.21.4 sunucu yükleme testi, kenar sönümü + harita dışı düz okyanus, 
 - 2026-11-19: Faz 11 tamam (v0.8.0) — Loom dev istemcisi + localhost köprü modu; ajan oyunu kendisi açıp 6 ekran görüntüsü aldı ve kapattı.
 - 2026-11-19: Faz 6 doğrulandı (104 test; 4096² verify %100, sunucu 52/52). MCP `generate` parçalı üretimi destekliyor.
 - 2026-11-19: Faz 7 tamam (v0.9.0) — oyun içi önce/sonra: kaya karışımı, kıyı/deniz derinliği, "Not a string" (WP level.dat Player boyutu) düzeltildi; 127 test, verify %100, sunucu 52/52 ×3.
+- 2026-11-19: Faz 8 tamam (v0.10.0) — doğal dil → plan JSON (kural tabanlı, TR/EN), plan geçmişi + revizyon, MCP/CLI/skill; uçtan uca verify %100, sunucu 52/52.

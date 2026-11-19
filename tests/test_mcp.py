@@ -13,7 +13,7 @@ from agent import mcp_server as S
 
 ROOT = Path(__file__).resolve().parent.parent
 TOOLS = {"list_presets", "describe_params", "generate", "preview", "server_load_test", "install_world", "edit_world",
-         "game_start", "game_status", "game_command", "game_stop", "ingame_tour"}
+         "game_start", "game_status", "game_command", "game_stop", "ingame_tour", "plan_terrain", "build_from_plan"}
 
 
 @pytest.fixture(scope="module")

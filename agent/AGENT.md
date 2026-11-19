@@ -10,6 +10,13 @@ Kural: model blok/koordinat üretmez. Model yalnızca **parametre JSON'u** yazar
 5. Görsel kontrol gerekiyorsa sadece `previews/oblique.png` oku (tek görsel).
 6. Revizyon = yalnızca değişen parametreler; motor kodu değişirse `ENGINE_VERSION` artır (cache geçersizleşir).
 
+### Doğal dil komutu (Faz 8, en az token)
+Skill: `.claude/skills/terrain/SKILL.md`. Akış: `plan_terrain(istek, base_plan=None, name=None)` → yalnız `unmatched`/`needs`
+alanlarını çöz (plan JSON'unda o kısmı düzelt; bilinmiyorsa kullanıcıya sor) → `build_from_plan(plan, export_world, verify, ingame_tour)`.
+Plan kurallarla yerelde çıkar (model çağrısı yok); revizyonda aynı `name` ver, son plan `exports/plans/<name>.json`'dan gelir.
+`action: "edit"` planında `source` (level.dat'lı dünya) ve `box` gerekir; çıktı `exports/edits/<name>`.
+Aşağıdaki el kuralları yalnız `unmatched` kalanlar için.
+
 ### Doğal dil → `regions` (az token)
 - Yön → `{"shape":"half","side":"west|east|north|south"}`; "kuzeydoğu köşe" → `box` (x doğuya, z güneye artar, 0..width/length);
   "ortada göl/tepe" → `circle`; serbest alan → `polygon`. Sınır "yumuşak/keskin" → `blend` 64 / 8 (vars. 32).
@@ -38,6 +45,7 @@ Sunucu: `agent/mcp_server.py` (stdio, kökteki `.mcp.json` ile Claude Code'a kay
 - `server_load_test(export_dir)` → yerel MC 1.21.4 sunucu testi sonucu (yavaş)
 - `install_world(export_dir, new_name=None)` → `%APPDATA%\.minecraft\saves\<yeni ad>`; var olanın üzerine yazmaz.
 - `edit_world(source, out, box=[x0,z0,x1,z1], preset, overrides, blend=24)` → var olan dünyanın kutusunu yeni `out` kopyasında düzenler (edit-world raporu).
+- `plan_terrain(request, base_plan=None, name=None)` → `{plan, unmatched, needs, warnings, explanation, history}`; `build_from_plan(plan, export_world=False, verify=False, ingame_tour=False)` → `generate` sonucu (+ `tour` yolları) ya da edit raporu.
 
 Düşük token akışı: `list_presets` → `generate` → (gerekirse) `preview` tek görsel. `cache_hit: true` ise tekrar üretme/doğrulama yok.
 
