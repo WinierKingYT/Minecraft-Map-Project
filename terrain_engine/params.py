@@ -44,6 +44,9 @@ NUMERIC = {
     "tree_line": (150.0, 0, 320),
     "pine_line": (105.0, 0, 320),
     "caves": (0.0, 0.0, 1.0),              # WorldPainter Caverns/Chasms layer amount (0 = off)
+    "tributaries": (0.0, 0.0, 1.0),        # side streams joining the river along valleys (0 = off)
+    "lakes": (0.0, 0.0, 1.0),              # lakes in natural basins, flat at their spill level (0 = off)
+    "vegetation": (0.0, 0.0, 1.0),         # post-export features: flower patches, bushes, fallen logs, boulders
 }
 CHOICES = {
     "river_axis": ("north_south", "west_east"),

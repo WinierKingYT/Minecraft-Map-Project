@@ -1,7 +1,8 @@
 """WorldPainter bridge: writes a wpscript (Nashorn JS) and runs it headless.
 
 Only documented API calls are used (worldpainter.net/trac/wiki/Scripting/API),
-plus World2.setName/setSpawnPoint which are plain public Java setters.
+plus World2.setName/setSpawnPoint and Dimension.setWaterLevelAt (lakes/streams; what WP's Flood tool sets),
+plain public Java methods probed with javap + a throwaway script on 2.27.1.
 """
 import json
 import os
@@ -13,7 +14,7 @@ import numpy as np
 import nbtlib
 from PIL import Image
 
-from . import anvil_fix
+from . import anvil_fix, decorate
 from .export import HEIGHT_MAX, ROOT
 from .generator import SEA_DEPTH, T
 
@@ -32,6 +33,7 @@ var world = wp.createWorld().fromHeightMap(hm)
     .withLowerBuildLimit(-64).withUpperBuildLimit(320).go();
 world.setName({name});
 try {{ world.setSpawnPoint(new java.awt.Point({sx}, {sz})); }} catch (e) {{ print('spawn not set: ' + e); }}
+{water}
 var tm = wp.getHeightMap().fromFile(DIR + '/terrain_index.png').go();
 var op = wp.applyHeightMap(tm).toWorld(world).applyToTerrain();
 {terrain_map}
@@ -71,6 +73,32 @@ def _extra_layers(out: Path) -> str:
     return "\n".join(js) if len(js) > 1 else ""
 
 
+_WATER_JS = """(function () {{  // lakes/streams: per-column water level (y of the top water block)
+  var dim = world.getDimension(Java.type('org.pepsoft.worldpainter.Dimension$Anchor').NORMAL_DETAIL);
+  var lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get(DIR + '/{name}'));
+  for (var i = 0; i < lines.size(); i++) {{
+    var f = lines.get(i).split(' ');
+    dim.setWaterLevelAt(parseInt(f[0]), parseInt(f[1]), parseInt(f[2]));
+  }}
+  print('local water columns: ' + lines.size());
+}})();"""
+
+
+def _fields(out: Path) -> dict:
+    path = out / "fields.npz"
+    return dict(np.load(path)) if path.exists() else {}
+
+
+def _water(out: Path, f: dict) -> str:
+    """Sparse 'x z level' list of lake/stream water columns (only where the ground is below the level)."""
+    if "water_level" not in f:
+        return ""
+    lv = f["water_level"].astype(np.int64)
+    zs, xs = np.nonzero((lv > 0) & (np.floor(f["height"] + 0.5) < lv))
+    (out / "water_level.txt").write_text("".join(f"{x} {z} {lv[z, x]}\n" for x, z in zip(xs, zs)), encoding="ascii")
+    return _WATER_JS.format(name="water_level.txt")
+
+
 def write_script(p: dict, out: Path) -> Path:
     used = sorted(int(v) for v in np.unique(np.asarray(Image.open(out / "terrain_index.png"))))
     names = {code: _ENUM.get(n, n) for n, code in T.items()}
@@ -80,7 +108,7 @@ def write_script(p: dict, out: Path) -> Path:
     lines += [f"op = op.fromLevel({c}).toTerrain(tIdx('{names[c]}'));" for c in used]
     js = _JS.format(dir=json.dumps(out.as_posix()), fmt=json.dumps(MAP_FORMAT), hmax=int(HEIGHT_MAX),
                     wl=p["water_level"], name=json.dumps(p["name"]), sx=p["width"] // 2, sz=p["length"] // 2,
-                    terrain_map="\n".join(lines), extra_layers=_extra_layers(out))
+                    terrain_map="\n".join(lines), extra_layers=_extra_layers(out), water=_water(out, _fields(out)))
     path = out / "worldpainter" / "build_world.js"
     path.parent.mkdir(exist_ok=True)
     (out / "world").mkdir(exist_ok=True)
@@ -108,6 +136,8 @@ def run(p: dict, out: Path, timeout: int | None = None) -> Path:
     if not (world / "level.dat").exists():
         raise RuntimeError(f"export finished but {world / 'level.dat'} missing; see {log}")
     anvil_fix.fix_world(world)  # WP writes minecraft:grass, gone since 1.20.3
+    if p.get("vegetation", 0) > 0:
+        decorate.decorate_world(world, p, _fields(out))
     fix_player_dimension(world)
     if p["outside"] == "ocean":
         set_outside_ocean(world, p["water_level"])

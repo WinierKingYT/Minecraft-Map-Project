@@ -53,8 +53,12 @@ def test_river_bed_consistent(valley):
     wl, hw = p["water_level"], p["river_width"] / 2
     bed = d["river_dist"] < hw
     assert (d["height"][bed] < wl).all(), "river bed must be under water"
-    inland = (d["river_dist"] > hw + 1) & (d["coast"] > 0.999)
-    assert (d["height"][inland] >= wl).all(), "no accidental flooding inland outside the river"
+    # 0.11.0: intended lakes/streams (water_level > 0) are the only other water inland; their surface is never
+    # below the sea level, and nothing else floods
+    lv = d["water_level"]
+    inland = (d["river_dist"] > hw + 1) & (d["coast"] > 0.999) & (lv == 0)
+    assert (d["height"][inland] >= wl).all(), "no accidental flooding inland outside the river and lakes/streams"
+    assert (lv[lv > 0] >= wl).all()
     assert bed.any(axis=1).all(), "river must cross every row (continuous N-S)"
     near = (d["river_dist"] > hw) & (d["river_dist"] < hw + p["bank_width"])
     assert np.median(d["slope"][near]) < 20, "banks/floodplain should be gentle"
@@ -75,7 +79,9 @@ def test_no_spikes(valley):
     _, d = valley
     h = d["height"].astype(np.float64)
     lap = np.abs(4 * h[1:-1, 1:-1] - h[:-2, 1:-1] - h[2:, 1:-1] - h[1:-1, :-2] - h[1:-1, 2:])
-    assert np.percentile(lap, 99.9) < 6, "isolated single-cell spikes detected"
+    # 0.11.0: stream channels are narrow trenches by design; judge spikes away from them
+    wet = G._near(d["water_level"] > 0, 2)[1:-1, 1:-1]
+    assert np.percentile(lap[~wet], 99.9) < 6, "isolated single-cell spikes detected"
 
 
 def test_u16_roundtrip(valley):

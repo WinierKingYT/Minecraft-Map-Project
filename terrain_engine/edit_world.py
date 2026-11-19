@@ -205,10 +205,11 @@ def weights(bw: int, bh: int, blend: float) -> tuple[np.ndarray, np.ndarray]:
 
 
 def local_params(preset, overrides, bw: int, bh: int) -> dict:
-    """Engine params for the box in box-local coords (regions too); no coast fade -- the blend is the edge."""
+    """Engine params for the box in box-local coords (regions too); no coast fade -- the blend is the edge.
+    shortcut: no lakes/streams/vegetation in edited boxes (the rebuild only knows the sea level); Faz 10."""
     p = P.load(preset, overrides)
     return P.validate({**p, "width": max(16, -(-bw // 16) * 16), "length": max(16, -(-bh // 16) * 16),
-                       "edge_falloff": 0.0})
+                       "edge_falloff": 0.0, "tributaries": 0.0, "lakes": 0.0, "vegetation": 0.0})
 
 
 def _rebuild(ids, pal, T0, T1, wtop, edited, terrain):

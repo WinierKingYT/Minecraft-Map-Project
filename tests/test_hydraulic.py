@@ -9,7 +9,7 @@ from terrain_engine import hydraulic as H
 from terrain_engine import params as P
 
 SEED = {"seed": "20261118"}
-# sha256 over all output fields of a 128x96 map with hydraulic=0 (and caves/biomes off). First recorded with v0.3.0
+# sha256 over all output fields of a 128x96 map with hydraulic=0 (and caves/biomes/lakes/streams off). First recorded with v0.3.0
 # (before hydraulic existed); re-recorded with v0.9.0, whose surface and coast changes were intended.
 V030 = {"fantasy_forest_valley": "6e04e45a4aa8031f60a254fecd8b5190b13673c3e6ef70e78a5b0aba333dc8e8",
         "west_forest_east_rocky": "10f7c5ac38d76645aa7cafabf5662ddd5e2a9d9106a7eeeee0e79e59298c18b1",
@@ -36,14 +36,15 @@ def _slope_stats(d):
 
 @pytest.fixture(scope="module")
 def pair():
-    on = P.load("fantasy_forest_valley", SEED)
+    on = P.load("fantasy_forest_valley", {**SEED, "tributaries": "0", "lakes": "0"})  # erosion alone
     assert on["hydraulic"] > 0, "preset should enable hydraulic erosion"
     return on, G.generate(on), G.generate({**on, "hydraulic": 0.0})
 
 
 @pytest.mark.parametrize("preset", sorted(V030))
 def test_off_is_bit_identical_to_v030(preset):
-    p = P.load(preset, {**SEED, "width": "128", "length": "96", "hydraulic": "0", "caves": "0", "biomes": "off"})
+    p = P.load(preset, {**SEED, "width": "128", "length": "96", "hydraulic": "0", "caves": "0", "biomes": "off",
+                        "tributaries": "0", "lakes": "0"})
     assert _digest(G.generate(p)) == V030[preset]
 
 
@@ -76,6 +77,13 @@ def test_slopes_lower_relief_kept(pair):
     med_off, relief_off = _slope_stats(off)
     assert med_on < 0.78 * med_off, (med_on, med_off)
     assert relief_on > 0.8 * relief_off, (relief_on, relief_off)
+
+
+def test_p90_slope_not_above_off(pair):
+    """0.11.0 (Faz 9): on the 2-block grid the steepest tenth of the land was steeper with erosion than without."""
+    _, on, off = pair
+    p90 = [np.percentile(d["slope"][d["coast"] > 0.999], 90) for d in (on, off)]
+    assert p90[0] < p90[1] - 2, p90
 
 
 def test_finite_and_moderate_change(pair):

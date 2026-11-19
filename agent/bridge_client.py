@@ -243,9 +243,14 @@ def _box_mean(a: np.ndarray, r: int) -> np.ndarray:
     return (w / (k * k))[: a.shape[0], : a.shape[1]]
 
 
+def _near_mask(m: np.ndarray, r: int) -> np.ndarray:
+    return _box_mean(m, r) > 0
+
+
 def auto_viewpoints(p: dict, f: dict) -> list[dict]:
-    """4-6 views from params + fields (arrays indexed [z, x], world block = array cell):
-    overview, river, mountain->valley, coast, meadow (ground level, plants), cave (if caves)."""
+    """4-8 views from params + fields (arrays indexed [z, x], world block = array cell):
+    overview, river, mountain->valley, coast, meadow (ground level, plants), lake + tributary (if lakes/streams),
+    cave (if caves)."""
     h = np.asarray(f["height"], dtype=np.float64)
     L, W = h.shape
     wl = float(p["water_level"])
@@ -307,6 +312,26 @@ def auto_viewpoints(p: dict, f: dict) -> list[dict]:
             tx, tz = cx, cz
         views.append(look_at("meadow", (gx + 0.5, h[gz, gx] + 1.2, gz + 0.5),
                              (tx, float(h[gz, gx]) - 1, tz)))
+
+    if "water_level" in f:  # Faz 9: the biggest lake, and an upper stream looking down towards the river
+        lw = (np.asarray(f["water_level"]) > 0) & (np.floor(h + 0.5) < f["water_level"]) & interior
+        lake = lw & (_box_mean(lw, 3) > 0.6)
+        if lake.any():
+            lz, lx = np.unravel_index(int(np.argmax(np.where(lake, _box_mean(lake, 8), -1))), h.shape)
+            lv = float(f["water_level"][lz, lx])
+            views.append(look_at("lake", (lx + 0.5, lv + 30, lz + 36.5), (lx + 0.5, lv, lz + 0.5)))  # over the trees
+        stream = lw & ~_near_mask(lake, 6) & (np.asarray(f["water_level"]) > wl + 3)
+        sz, sx = np.nonzero(stream)
+        if len(sx) and len(rx):
+            k = len(sx) // 2
+            gx, gz = float(sx[k]), float(sz[k])
+            j = int(np.argmin((rx - gx) ** 2 + (rz - gz) ** 2))
+            tx, tz = float(rx[j]), float(rz[j])
+            d = math.hypot(tx - gx, tz - gz) or 1.0
+            cxs, czs = gx - 16 * (tx - gx) / d, gz - 16 * (tz - gz) / d
+            ci, cj = int(np.clip(czs, 0, L - 1)), int(np.clip(cxs, 0, W - 1))
+            views.append(look_at("tributary", (cxs, max(float(h[ci, cj]), float(h[int(gz), int(gx)])) + 28, czs),
+                                 (gx + (tx - gx) * 0.4, wl + 2, gz + (tz - gz) * 0.4)))
 
     if p.get("caves", 0) > 0 and "caverns" in f:
         cav = np.where(interior & (h > wl + 4), np.asarray(f["caverns"], dtype=np.float64), -1)

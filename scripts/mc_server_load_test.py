@@ -27,6 +27,12 @@ def main(export_dir: str) -> int:
     rng = np.random.default_rng(0)
     h = d["height"]
     land = (h > p["water_level"] + 1) & ((d["trees_deciduous"] + d["trees_pine"]) == 0)
+    sys.path.insert(0, str(ROOT))
+    if "water_level" in d:  # lakes / streams
+        land &= ~((d["water_level"] > 0) & (np.floor(h + 0.5) < d["water_level"]))
+    if p.get("vegetation", 0) > 0:  # boulders / flowers / logs placed after the export
+        from terrain_engine.decorate import footprint
+        land &= ~footprint(p, dict(d))
     probes = []
     for gz in range(GRID):
         for gx in range(GRID):
@@ -51,6 +57,13 @@ def main(export_dir: str) -> int:
                        f"unless block {x} {floor} {z} minecraft:air", f"unless block {x} {floor} {z} minecraft:water"]
     for x, y, z in probes:
         checks += [f"unless block {x} {y} {z} minecraft:air", f"if block {x} {y + 1} {z} #minecraft:replaceable"]
+    if "water_level" in d:  # 4 lake/stream columns: water at the planned surface, air above it
+        lv = d["water_level"].astype(int)
+        zs, xs = np.nonzero((lv > 0) & (np.floor(h + 0.5) < lv))
+        for i in (rng.choice(len(xs), min(4, len(xs)), replace=False) if len(xs) else []):
+            x, z, y = int(xs[i]), int(zs[i]), int(lv[zs[i], xs[i]])
+            cmds.append(f"forceload add {x} {z}")
+            checks += [f"if block {x} {y} {z} minecraft:water", f"if block {x} {y + 1} {z} minecraft:air"]
     cmds += [f"execute {c}" for c in checks]
     return run(out / "world" / p["name"], cmds, len(checks), out / "server_load_test.json")
 

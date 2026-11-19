@@ -62,7 +62,13 @@ MC 1.21.4 sunucu yükleme testi, kenar sönümü + harita dışı düz okyanus, 
   Sonuç (v0.10.0): kural tabanlı `terrain_engine/intent.py` (AI yok), `plan` CLI, MCP `plan_terrain`/`build_from_plan`, skill
   `.claude/skills/terrain`; tanınmayan → `unmatched`/`needs`. Uçtan uca: örnek 1 + revizyon "batıya orman, doğuya kayalık" →
   verify %100, sunucu 52/52.
-- `[ ]` **Faz 9 — görsel kalite:** nehir kolları ve göller, 256² dik yamaç p90'ı, özel ağaç objeleri, bitki `.layer` dosyaları.
+- `[x]` **Faz 9 — görsel kalite:** nehir kolları ve göller, 256² dik yamaç p90'ı, özel ağaç objeleri, bitki `.layer` dosyaları.
+  Sonuç (v0.11.0): `tributaries`/`lakes` (`water.py`, WP kolon başına su seviyesi), `vegetation` (`decorate.py`, export sonrası
+  çiçek/çalı/kütük/kaya — WP bitki/obje katmanının belgeli script API'si yok); 256² p90 fantasy 57.2→54.2, mountain 60.1→57.2
+  (kapalı 56.7/61.7). verify %100 + sunucu 60/60 (2×256², 1024²); `previews/phase9/`. Kalan: kaya duvarları hâlâ geniş gri;
+  göller kazınmış çanak (doğal çukur yok); WP ağaç objeleri (`.bo2/.schem`) denenmedi.
+- `[ ]` **Faz 9b — su ağı düzeltmeleri:** 1024²+ haritalarda dereler fazla düz / dik açılı kırılıyor, göller derelere
+  boncuk gibi diziliyor; çiçek/çalı oranı dengesiz. (Oyun içi görüntü: `previews/phase9/mountain_valley_1024_overview_after.png`.)
 - `[ ]` **Faz 10 — edit-world v2:** düzenlenen alana ağaç/biyom yerleştirme, mağara tavanı koruması.
 - `[ ]` **Faz 12 — yapılar (sonra):** ev, kale, köy, dungeon. Şu an yalnızca arazi.
 
@@ -82,3 +88,4 @@ MC 1.21.4 sunucu yükleme testi, kenar sönümü + harita dışı düz okyanus, 
 - 2026-11-19: Faz 6 doğrulandı (104 test; 4096² verify %100, sunucu 52/52). MCP `generate` parçalı üretimi destekliyor.
 - 2026-11-19: Faz 7 tamam (v0.9.0) — oyun içi önce/sonra: kaya karışımı, kıyı/deniz derinliği, "Not a string" (WP level.dat Player boyutu) düzeltildi; 127 test, verify %100, sunucu 52/52 ×3.
 - 2026-11-19: Faz 8 tamam (v0.10.0) — doğal dil → plan JSON (kural tabanlı, TR/EN), plan geçmişi + revizyon, MCP/CLI/skill; uçtan uca verify %100, sunucu 52/52.
+- 2026-11-19: Faz 9 tamam (v0.11.0) — dere ağı + göller (WP `setWaterLevelAt`), export sonrası doğal objeler, 256² p90 düştü; verify %100, sunucu 60/60 ×3, oyun içi önce/sonra.

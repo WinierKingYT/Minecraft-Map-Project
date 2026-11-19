@@ -77,9 +77,10 @@ SAMPLE_REGIONS = 9  # region files read block-by-block; bigger worlds are checke
 
 
 def _scan_chunk(chunk, water_level):
-    """(top y, water at water_level, cave air count, biome at water_level) of one chunk's 16x16 columns.
-    Cave air = air >= CAVE_DEPTH below the top, above bedrock."""
+    """(top y, water at water_level, cave air count, biome at water_level, top water y) of one chunk's 16x16
+    columns. Cave air = air >= CAVE_DEPTH below the top, above bedrock."""
     col_top = np.full((16, 16), -999, dtype=np.int64)
+    water_top = np.full((16, 16), -999, dtype=np.int64)
     water = np.zeros((16, 16), dtype=bool)
     biome = np.full((16, 16), "", dtype=object)
     air = np.zeros((Y_MAX - Y_MIN, 16, 16), dtype=bool)
@@ -99,13 +100,15 @@ def _scan_chunk(chunk, water_level):
         ys = y0 + np.arange(16)
         ymax = np.where(g.any(axis=0), ys[15 - np.argmax(g[::-1], axis=0)], -999)
         col_top = np.maximum(col_top, ymax)
+        w = is_water[idx].reshape(16, 16, 16)
+        water_top = np.maximum(water_top, np.where(w.any(axis=0), ys[15 - np.argmax(w[::-1], axis=0)], -999))
         if Y_MIN <= y0 < Y_MAX:
             air[y0 - Y_MIN:y0 - Y_MIN + 16] = is_air[idx].reshape(16, 16, 16)
         if 0 <= wy < 16:
             water = is_water[idx].reshape(16, 16, 16)[wy]
     ys = np.arange(Y_MIN, Y_MAX)[:, None, None]
     cave = (air & (ys <= col_top - CAVE_DEPTH) & (ys > Y_MIN + 4)).sum(axis=0)
-    return col_top, water, cave, biome
+    return col_top, water, cave, biome, water_top
 
 
 def _region_xz(rf: Path) -> tuple[int, int]:
@@ -130,6 +133,7 @@ def scan(world: Path, width: int, length: int, water_level: int, box=None, regio
     water = np.zeros(shape, dtype=bool)
     cave = np.zeros(shape, dtype=np.int64)
     biome = np.full(shape, "", dtype=object)
+    wtop = np.full(shape, -999, dtype=np.int64)
     statuses = set()
     files = sorted((world / "region").glob("r.*.mca")) if region_files is None else region_files
     for rf in files:
@@ -139,8 +143,8 @@ def scan(world: Path, width: int, length: int, water_level: int, box=None, regio
             if not (x0 <= cx < x1 and z0 <= cz < z1 and cx < width and cz < length):
                 continue
             sl = (slice(cz - z0, cz - z0 + 16), slice(cx - x0, cx - x0 + 16))
-            top[sl], water[sl], cave[sl], biome[sl] = _scan_chunk(chunk, water_level)
-    return {"top": top, "water": water, "cave": cave, "biome": biome, "statuses": statuses}
+            top[sl], water[sl], cave[sl], biome[sl], wtop[sl] = _scan_chunk(chunk, water_level)
+    return {"top": top, "water": water, "cave": cave, "biome": biome, "water_top": wtop, "statuses": statuses}
 
 
 def _pct(n, d):
@@ -166,7 +170,8 @@ def verify(world: Path, p: dict, fields: dict, sample_regions: int = SAMPLE_REGI
     W, L, wl = p["width"], p["length"], p["water_level"]
     files, picked = pick_regions(world, W, L, sample_regions)
     a = dict.fromkeys(("cols", "covered", "land", "within1", "exact", "river", "river_water", "dry", "dry_water",
-                       "cave_air", "cave_room", "cave_cols", "cave_river", "river_core_biome", "biome_match"), 0)
+                       "cave_air", "cave_room", "cave_cols", "cave_river", "river_core_biome", "biome_match",
+                       "local", "local_water", "stray"), 0)
     diff_hist = np.zeros(801, dtype=np.int64)  # land height offsets -400..400, for the median
     biomes, statuses, ids = {}, set(), None
     if "biomes" in fields:
@@ -201,6 +206,16 @@ def verify(world: Path, p: dict, fields: dict, sample_regions: int = SAMPLE_REGI
         a["cave_cols"] += int((cave[lc] > 0).sum())
         a["cave_river"] += int(cave[rd < p["river_width"] / 2].sum())
         a["river_core_biome"] += int((biome[river] == "minecraft:river").sum())
+        # lakes/streams: the top water block sits at the planned level; no water anywhere else above the ground
+        r = np.floor(h + 0.5)
+        local = np.zeros(h.shape, dtype=bool)
+        if "water_level" in fields:
+            lv = fields["water_level"][sl].astype(np.int64)
+            local = (lv > 0) & (r < lv)
+            a["local"] += int(local.sum())
+            a["local_water"] += int((sc["water_top"][local] == lv[local]).sum())
+        sea = np.floor(h + 0.49) < wl  # h within 0.01 of x.5 may round either way through the 16-bit heightmap
+        a["stray"] += int((covered & (sc["water_top"] > top) & ~sea & ~local).sum())
         for n, c in zip(*np.unique(biome[covered].astype(str), return_counts=True)):
             biomes[str(n)] = biomes.get(str(n), 0) + int(c)
         if ids is not None:  # painted map vs world, per column (MC stores biomes in 4x4 cells)
@@ -228,7 +243,11 @@ def verify(world: Path, p: dict, fields: dict, sample_regions: int = SAMPLE_REGI
         "cave_air_under_river_blocks": a["cave_river"],
         "biome_pct": {n: round(100 * c / n_bio, 2) for n, c in sorted(biomes.items())},
         "river_core_is_river_biome_pct": _pct(a["river_core_biome"], a["river"]),
+        "stray_water_columns": a["stray"],
     }
+    if "water_level" in fields:
+        report["lake_stream_columns"] = a["local"]
+        report["lake_stream_water_pct"] = _pct(a["local_water"], a["local"])
     if ids is not None:
         report["biome_match_pct"] = _pct(a["biome_match"], a["cols"])
     return report

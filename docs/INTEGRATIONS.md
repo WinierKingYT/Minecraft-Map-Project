@@ -32,6 +32,16 @@
   `.world` dosyası 35 MB. WP export dizininde boş `backups/` klasörü açabiliyor (zararsız).
   WP çıktısı çalıştırmadan çalıştırmaya birebir değil (ör. `minecraft:grass` palet sayısı 65 592 / 65 554) — WP'nin kendi rastgeleliği.
 - WP heightmap/katman girdileri tam çözünürlüklü PNG (4096²: 16 bit yükseklik 16 MB).
+- **Kolon başına su seviyesi (Faz 9, probla doğrulandı):** script API'sinde (`MappingOp`) su seviyesi eşlemesi yok
+  (`applyToLayer/Terrain/Surface/...` var, su yok). Ama `Dimension.setWaterLevelAt(x, y, level)` (GUI'nin Flood aracının
+  yazdığı) public Java metodu: `world.getDimension(Dimension$Anchor.NORMAL_DETAIL)` ile alınıp çağrılır. Seviye = üst su
+  bloğunun y'si; WP o kolonda zeminden seviyeye dek su doldurur ve su altındaki çimeni toprağa çevirir. Deneme: 32² çanak,
+  seviye 69 → y 67..69 su, kenarlar kuru. Köprü yalnız su kolonlarını `water_level.txt` (`x z seviye`) olarak verir,
+  JS `java.nio.file.Files.readAllLines` ile okur (1024²: 15 100 satır, ek süre ihmal edilebilir).
+- **Bitki/obje katmanları:** `PlantLayer`, `Bo2Layer` (bo2/bo3/schem/nbt nesneleri) `CustomLayer`; script API'sinde kurucu yok,
+  yalnız `wp.getLayer().fromFile('x.layer')` ile GUI'de kaydedilmiş `.layer` (Java serileştirmesi) yüklenir. Belgesiz
+  kurucuları çağırmadık; bunun yerine `terrain_engine/decorate.py` export sonrası blokları kendisi yazar (region dosyalarını
+  `edit_world` yardımcılarıyla). Arazide doğal kapalı çukur olmadığı için göller kazınmış çanaklarda (bkz. CHANGELOG 0.11.0).
 
 ## Axiom 6.1.5 (MC 1.21.4, Fabric)
 - Bağımlılık: fabricloader ≥0.14.21 (kurulu 0.19.5), fabric-api (0.119.4), Java ≥17.

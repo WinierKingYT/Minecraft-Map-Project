@@ -1,5 +1,41 @@
 # CHANGELOG
 
+## 0.11.0 — 2026-11-19 (Faz 9: görsel kalite)
+- Yeni global parametreler (vars. 0 = kapalı, presetler açar): `tributaries` (nehir kolları), `lakes` (göller),
+  `vegetation` (export sonrası doğal objeler). `ENGINE_VERSION` 0.9.0 → 0.11.0.
+- `terrain_engine/water.py`: hidrolik geçişle aynı kaba ızgarada tek global geçiş. Çıkışlara (ana nehir, deniz bandı,
+  harita kenarı) doğru priority-flood → taşma seviyeleri + yokuş aşağı akış ağacı. Yeterli alan toplayan hücreler dere
+  olur, nehre/denize/başka dereye ulaşana dek izlenir; yollar 5 noktalı ortalamayla yumuşatılmış çizgiler (global blok
+  koordinatı), her parça noktasal çizer → parçalar yine bit-bit aynı. Dere suyu = dolu yükseklik − 1 (aşağı doğru
+  monoton, en az deniz seviyesi), genişlik drenaj alanıyla 2–5 blok, kaynakta dar; kıyı duvarı ≤ ~37°.
+- Göller: arazide doğal kapalı çukur yok (ölçüldü: dağlık presetlerde 0.3 bloktan derin hücre 0), bu yüzden drenaj
+  hattındaki düz basamaklara yumuşak bir çanak oyulur (buzul gölü gibi); göl o çanağı kendi taşma seviyesine dek
+  doldurur (düz yüzey, deniz üstünde). Çanak yarıçapı iki harmonikle düzensiz (daire değil); sayı 2·lakes·(alan/256²)^0.75. Kıyı = göl seviyesinin blok-düzeyi eş yükselti eğrisi, çevresi suyun üstünde.
+  Yeni alan `water_level` (uint16, 0 = yok; yalnız açıkken), göl/dere tabanı çakıl/kum/kil, kıyıda ağaç yok,
+  biyom `river`, mağara yok.
+- WorldPainter: kolon başına su seviyesi `Dimension.setWaterLevelAt` ile (`water_level.txt` seyrek listesi); su altı
+  çimeni WP kendisi toprağa çeviriyor. Ayrıntı `docs/INTEGRATIONS.md`.
+- `terrain_engine/decorate.py` (`vegetation`): export sonrası çiçek öbekleri, çalı (kütük + kalıcı yaprak; fantasy'de
+  azalea), devrik kütük (yosun halısıyla), kaya (taş/andezit/kırık taş/yosunlu kırık taş, en çok +1 blok). 8 bloklu
+  titreşimli ızgara, her seçim (seed, x, z) hash'i → dünya koordinatının saf fonksiyonu; region sınırını aşmaz.
+  Yalnız kuru, açık, gövdesiz zeminde; değişen chunk'lar `edit_world` yardımcılarıyla yazılır (ışık oyunca yeniden).
+- 256² dik yamaç: en ince ızgarada (2 blok/hücre) şev açısı 0.8 → 0.6 (`FINE_TALUS`), parti başı gevşeme 3 → 4.
+  Daha büyük ızgaralar değişmedi. Arazi eğimi medyan/p90 (kapalı → 0.10 → 0.11 yalnız hidrolik → 0.11 preset):
+  fantasy 256² 39.1/56.7 → 30.0/57.2 → 29.7/52.5 → 31.6/54.2; mountain_valley 256² 43.8/61.7 → 32.9/60.1 → 32.2/55.9
+  → 33.8/57.2; mountain_valley 1024² 15.6/37.6 → 14.4/29.9 → 14.4/29.9 → 15.4/30.9. Rölyef 256²'de %6 azaldı
+  (fantasy 67.9 → 64.0). Dere yarıkları medyanı ~1.5° geri artırıyor.
+- Sayılar (seed 20261118): fantasy 256² 7 dere + 1 göl (931 su kolonu), çiçek 4 / çalı 41 / kütük 12 / kaya 9;
+  mountain_valley 256² 5 dere + 2 göl (1072), 14/42/17/4; mountain_valley 1024² 27 dere + 16 göl (15 100), 787/2020/1162/367.
+- verify: `lake_stream_columns`, `lake_stream_water_pct` (üst su bloğu planlanan seviyede), `stray_water_columns`
+  (deniz/nehir/göl/dere dışında zemin üstü su). Üç haritada %100 / 0. Sunucu testi: 4 göl/dere yoklaması eklendi, kuru
+  yoklamalar dekor ayak izinden kaçar (60/60 ×3). Köprü `auto_viewpoints`: `lake`, `tributary` görünümleri.
+- Testler: kasıtlı güncellemeler — iç kara "taşma yok" kuralı artık `water_level > 0` kolonları hariç (onların yüzeyi
+  ≥ deniz seviyesi); dikenlik testi dere hendeklerinden uzakta ölçülür; hidrolik testleri dere/gölsüz preset kullanır;
+  `test_features` V040 özetleri hidrolikli 4 preset için yeniden kaydedildi (eski sabitler eski özeti birebir veriyor);
+  p90 testi eklendi. Yeni `tests/test_water.py` (9).
+- `edit-world`: kutuda dere/göl/bitki kapalı (yeniden kurma yalnız deniz seviyesini biliyor; Faz 10).
+- Önce/sonra oyun içi: `previews/phase9/` (fantasy_valley, mountain_valley 256²; mountain_valley_1024 yalnız sonra).
+
 ## 0.10.0 — 2026-11-19 (Faz 8: doğal dil komutu)
 - `terrain_engine/intent.py`: kural tabanlı niyet derleyici (model çağrısı yok, deterministik). Türkçe/İngilizce istek →
   plan `{name, preset, size, overrides, regions, action, source?, box?}`; her plan `params.load` ile doğrulanır.

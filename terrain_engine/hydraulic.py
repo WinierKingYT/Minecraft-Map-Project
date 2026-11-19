@@ -28,6 +28,8 @@ BATCH_DIV = 8         # batch = cells / BATCH_DIV (fewer droplets writing the sa
 BATCH_RELAX = 3       # thermal steps after each batch: gully walls slump as they form
 RELAX_TALUS = 0.8     # angle of repose as a tangent (~39 deg) at CELL; lower for coarser cells (relax_talus)
 TALUS_EXP = 0.7       # talus ~ cell^-0.7 (tuned: slopes drop at 512^2..4096^2)
+FINE_TALUS = 0.6      # ~31 deg on the 2-block grid (maps <= 256^2; coarser grids unchanged)
+FINE_RELAX = 4        # thermal steps per batch on the 2-block grid
 HARD_FROM = 70.0      # height percentile where summit hardness starts
 HARD_CAP = 0.8        # erodibility lost at the highest summit
 SMOOTH = 2            # blur passes on the final delta (droplet-scale ripples)
@@ -43,8 +45,14 @@ def cell_size(width: int, length: int) -> int:
 
 def relax_talus(cell: int) -> float:
     """Coarse-grid angle of repose. A coarse cell hides more sub-cell relief (added back at block
-    scale), so gully walls on coarser grids must stay gentler for block slopes to drop."""
-    return RELAX_TALUS * (CELL / cell) ** TALUS_EXP
+    scale), so gully walls on coarser grids must stay gentler for block slopes to drop.
+    On the finest grid (maps <= CELL_REF) walls are gentler still (FINE_TALUS): its p90 slope was above the
+    hydraulic-off p90 (0.10.0: fantasy 256^2 57.2 vs 56.7)."""
+    return FINE_TALUS if cell <= CELL else RELAX_TALUS * (CELL / cell) ** TALUS_EXP
+
+
+def relax_steps(cell: int) -> int:
+    return FINE_RELAX if cell <= CELL else BATCH_RELAX
 
 
 def _brush(r):
@@ -131,5 +139,5 @@ def erode(h: np.ndarray, strength: float, seed: int, erodibility: np.ndarray, re
         # droplets of one batch act in parallel; never let them dig/stack beyond the input range
         np.clip(H, lo, hi, out=H)
         if relax is not None:
-            H[:] = relax(H, BATCH_RELAX)  # slumped wall material is carried off by later droplets
+            H[:] = relax(H, relax_steps(cell))  # slumped wall material is carried off by later droplets
     return H * cell

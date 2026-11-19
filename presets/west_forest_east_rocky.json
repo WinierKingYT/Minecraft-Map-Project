@@ -4,4 +4,5 @@
  "regions": [
   {"shape": "half", "side": "west", "blend": 32, "preset": "forest_hills", "set": {"tree_density": 0.9}},
   {"shape": "half", "side": "east", "blend": 32, "preset": "rocky_cliffs"}
- ]}
+ ],
+ "vegetation": 0.5}

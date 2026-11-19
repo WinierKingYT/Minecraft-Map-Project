@@ -28,6 +28,11 @@ ve `bridge/run` repoda yok; WorldPainter 2.27.1 portable zip'i `tools/worldpaint
 - `caves` (0..1, vars. 0): WorldPainter Caverns + Chasms mağaraları (nehir/deniz altında yok, yüzeyi delmez).
 - `biomes` (`off`/`on`, vars. off; presetlerde on): nehir/okyanus/kumsal/orman/taiga/zirve biyomları WP Biomes katmanıyla.
   Her ikisi global (bölgede kullanılamaz). verify mağara havası ve biyom dağılımını raporlar.
+- `tributaries` (0..1, vars. 0): ana nehre katılan dereler (vadileri izler, 2–5 blok, su yüzeyi yokuş aşağı basamaklı).
+  `lakes` (0..1, vars. 0): düz yüzeyli küçük göller (256²'de en çok 2·lakes, büyük haritada (alan/256²)^0.75 ile; drenaj hattındaki düz basamakta kendi
+  taşma seviyesinde). Su WP'ye kolon başına seviye olarak gider; verify `lake_stream_water_pct` ve `stray_water_columns` verir.
+- `vegetation` (0..1, vars. 0): export sonrası çiçek öbekleri, çalılar, devrik kütükler, kayalar (`decorations.json` sayıları).
+  Üçü de global; dağlık presetlerde açık (fantasy/mountain_valley 0.6/1.0/0.6, river_valley 0.5'ler; diğerlerinde yalnız bitki/göl).
 
 ### Büyük haritalar (4096² ve üstü)
 
@@ -80,7 +85,7 @@ Var olan bir 1.21.x dünyasının bir kutusunu motorla yeniden şekillendirir; s
 - Motor kutu-yerel koordinatta çalışır (`regions` koordinatları da kutuya göre); `edge_falloff` kutuda 0'a çekilir.
 - Güvenlik: kaynak yalnız okunur; `--out` var olan klasör, kaynağın içi/kendisi veya `%APPDATA%\.minecraft` altı ise reddedilir.
   Oyuna almak için çıktıyı `saves` klasörüne kendin kopyala.
-- Sınırlar: yeni ağaç/bitki konmaz; biyomlar ve entity'ler (`entities/`) değişmez; ışık ve heightmap oyunca yeniden hesaplanır;
+- Sınırlar: yeni ağaç/bitki, dere/göl konmaz; biyomlar ve entity'ler (`entities/`) değişmez; ışık ve heightmap oyunca yeniden hesaplanır;
   kolon yeni yüzeyin 3 blok altına kadar yazılır, daha derindeki mağaralar olduğu gibi kalır (alçaltılan yerde tavan
   açılabilir, kum/çakıl düşebilir); yeni su kutu kenarında taşabilir (havada asılı su yok).
 - Çıktı tek satır JSON: düzenlenen kolon/chunk sayısı, yükseklik değişimi, `interior_max_err`, `edge_jump_added_max`,
@@ -121,13 +126,13 @@ Ajan Minecraft'ı kendisi açar, test dünyasını açar, kamerayı konumlar ve 
   (PATH'teki Temurin 25 otomatik; başka yer için `BRIDGE_JAVA_HOME`). İlk açılış indirmeyle ~4-5 dk, sonra ~16 sn.
 - Dünya `bridge/run/saves` içine yeni adla kopyalanır (komutlar açık), görüntüler `exports/<..>/previews/ingame/*.png` (1280×720).
 - Köprü yalnız `127.0.0.1:25580`, her açılışta yeni jeton (`bridge/run/bridge_token.txt`). MCP: `game_start`, `game_status`,
-  `game_command`, `ingame_tour`, `game_stop` (bkz. `agent/AGENT.md`). Örnek görüntüler: `previews/ingame_fantasy_valley_256/`; v0.9.0 önce/sonra: `previews/phase7/`.
+  `game_command`, `ingame_tour`, `game_stop` (bkz. `agent/AGENT.md`). Örnek görüntüler: `previews/ingame_fantasy_valley_256/`; v0.9.0 önce/sonra: `previews/phase7/`; v0.11.0: `previews/phase9/`.
 
 ## Klasörler
 
 | Klasör | İçerik |
 |---|---|
-| `terrain_engine/` | noise (Perlin/fBm/ridged/warp), generator (vadi, nehir, termal erozyon, yüzey, ağaç), hydraulic (global damla erozyonu), regions (bölge maskeleri), intent (doğal dil → plan), export+cache, WorldPainter köprüsü, dünya doğrulayıcı, CLI |
+| `terrain_engine/` | noise (Perlin/fBm/ridged/warp), generator (vadi, nehir, termal erozyon, yüzey, ağaç), hydraulic (global damla erozyonu), water (dere ağı + göller), decorate (export sonrası doğal objeler), regions (bölge maskeleri), intent (doğal dil → plan), export+cache, WorldPainter köprüsü, dünya doğrulayıcı, CLI |
 | `presets/` | mountain_valley, forest_hills, rocky_cliffs, river_valley, natural_plains, fantasy_forest_valley, west_forest_east_rocky |
 | `scripts/` | dünya kurulum, Axiom mod seti aç/kapa, MC sunucu yükleme testi |
 | `axiom/` | Lua Script Brush presetleri + `instance/mods` (Fabric API + Axiom 6.1.5) |

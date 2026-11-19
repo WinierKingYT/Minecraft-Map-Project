@@ -31,7 +31,8 @@ def mv512():
 def test_cell_size_grows_with_map():
     assert [H.cell_size(n, n) for n in (128, 256, 512, 1024, 2048, 4096, 16384)] == [2, 2, 4, 8, 16, 16, 16]
     assert H.cell_size(256, 1024) == 8  # longest side decides
-    assert H.relax_talus(2) == H.RELAX_TALUS and H.relax_talus(16) < H.relax_talus(4) < H.relax_talus(2)
+    assert H.relax_talus(2) == H.FINE_TALUS and H.relax_talus(4) == H.RELAX_TALUS * 0.5 ** H.TALUS_EXP
+    assert H.relax_talus(16) < H.relax_talus(4) < H.relax_talus(2)
 
 
 def test_scale_aware_hydraulic_lowers_slopes_512(mv512):

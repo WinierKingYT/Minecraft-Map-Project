@@ -10,7 +10,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 
-from . import hydraulic, regions
+from . import hydraulic, regions, water
 from .noise import fbm, perlin, ridged, warp
 
 # WorldPainter terrain indices (verified with wpscript 2.27.1 probe)
@@ -36,7 +36,8 @@ def erosion_iterations(p: dict) -> tuple[int, int]:
 
 def margin(p: dict) -> int:
     thermal, blur = erosion_iterations(p)
-    return thermal + blur + 2
+    m = thermal + blur + 2
+    return max(m, CAVE_CLEARANCE + 1) if p.get("tributaries", 0) > 0 or p.get("lakes", 0) > 0 else m
 
 
 def _river_geometry(p, X, Z):
@@ -185,6 +186,24 @@ def _finish(p, X, Z, h, dist, coast):
     return _blur(h, 1, weight=0.35), coast
 
 
+def _near(mask, r):
+    """mask dilated by r cells (square); run on the margin grid (r < margin), so cropped tiles stay exact."""
+    out = mask.copy()
+    for _ in range(r):
+        q = np.pad(out, 1)
+        out = (q[1:-1, 1:-1] | q[:-2, 1:-1] | q[2:, 1:-1] | q[1:-1, :-2] | q[1:-1, 2:]
+               | q[:-2, :-2] | q[:-2, 2:] | q[2:, :-2] | q[2:, 2:])
+    return out
+
+
+def _local_max(a, r):
+    out = a.copy()
+    for _ in range(r):
+        q = np.pad(out, 1, mode="edge")
+        out = np.maximum.reduce([q[1:-1, 1:-1], q[:-2, 1:-1], q[2:, 1:-1], q[1:-1, :-2], q[1:-1, 2:]])
+    return out
+
+
 def _rock_mix(n2, n3, n4):
     """Natural rock from pure blocks in irregular patches: stone, andesite, tuff, gravel pockets."""
     r = np.full(n3.shape, T["STONE"], dtype=np.uint8)
@@ -194,7 +213,7 @@ def _rock_mix(n2, n3, n4):
     return r
 
 
-def _surface(p, X, Z, h, slope, dist, coast):
+def _surface(p, X, Z, h, slope, dist, coast, wm=None):
     s = p["seed"]
     wl = p["water_level"]
     hw = p["river_width"] / 2
@@ -245,8 +264,19 @@ def _surface(p, X, Z, h, slope, dist, coast):
     t[sea & (n4 < -0.4) & (h > wl - 6)] = T["CLAY"]
     t[sea & (h < wl - 5) & (n3 > 0.1)] = T["GRAVEL"]
 
+    lw = None
+    if wm is not None:  # lake/stream beds: gravel/sand/clay; shores a little sand and gravel
+        lw = wm["lw"]
+        t[lw] = np.where(n1[lw] > -0.15, T["GRAVEL"], T["SAND"])
+        t[lw & (n2 > 0.4)] = T["CLAY"]
+        shore_l = ~lw & wm["near2"] & (np.floor(h + 0.5) <= wm["lmax"] + 1)
+        t[shore_l & (n3 > 0.2)] = T["GRAVEL"]
+        t[shore_l & (n3 < -0.3)] = T["SAND"]
+
     suit = (h > wl + 1.5) * (1 - smoothstep(30, 42, slope)) * (1 - smoothstep(p["tree_line"] - 12, p["tree_line"], h))
     suit = suit * (dist > hw + 4) * np.isin(t, (T["GRASS"], T["PODZOL"], T["COARSE_DIRT"], T["MOSS"]))
+    if lw is not None:
+        suit = suit * ~wm["near3"]
     ledge = 0.35 * smoothstep(15, 25, slope) * (h > wl + 15)  # sparse trees on grassy mountain ledges
     density = np.maximum(forest, ledge) * suit * p["tree_density"]
     pine_w = smoothstep(p["pine_line"] - 12, p["pine_line"] + 12, h)
@@ -256,6 +286,8 @@ def _surface(p, X, Z, h, slope, dist, coast):
     out = {"terrain": t, "trees_deciduous": deciduous, "trees_pine": pine}
     if p["biomes"] == "on":  # key only present when on: old params keep identical outputs
         out["biomes"] = _biomes(p, h, slope, dist, coast, t, forest, pine_w, alpine, rock, n2, steep)
+        if lw is not None:
+            out["biomes"][lw & (coast > 0.999)] = B["RIVER"]
     return out
 
 
@@ -282,10 +314,12 @@ def _biomes(p, h, slope, dist, coast, t, forest, pine_w, alpine, rock, n2, steep
     return b
 
 
-def _caves(p, X, Z, h, dist, coast):
-    """Caverns / Chasms layer intensities (0..15). Never under the river, the sea or low shore."""
+def _caves(p, X, Z, h, dist, coast, wm=None):
+    """Caverns / Chasms layer intensities (0..15). Never under the river, the sea, lakes/streams or low shore."""
     s, wl = p["seed"], p["water_level"]
     ok = (coast > 0.999) & (dist > p["river_width"] / 2 + CAVE_CLEARANCE) & (h > wl + 4)
+    if wm is not None:
+        ok &= ~wm["near_cave"]
     # WP carves almost nothing below intensity ~8 (probed: 6 -> 1.5% of columns, 10 -> 12%, 15 -> 18%),
     # so `caves` sets both the patch area and an intensity of 8..15 inside the patches
     shift = 0.3 * p["caves"]
@@ -338,9 +372,9 @@ def _drain(ex, it):
 
 
 def _seed_cache(item):
-    """Worker initializer: reuse the parent's global hydraulic pass instead of recomputing it."""
+    """Worker initializer: reuse the parent's global passes (hydraulic, water) instead of recomputing them."""
     if item is not None:
-        _HYDRO_CACHE[item[0]] = item[1]
+        _HYDRO_CACHE.update(item)
 
 
 def _coarse_tile(p, x0, z0, w, hh):
@@ -357,12 +391,20 @@ def _down(a, c):
     return a.reshape(a.shape[0] // c, c, a.shape[1] // c, c).mean(axis=(1, 3))
 
 
-def _hydro_field(p):
-    """Global pass, cached per params: the hydraulic delta on the coarse grid (and its cell size).
-    Pre-heights are built tile by tile (exact, thanks to the margin) and only their coarse means are
-    kept, so memory is O(coarse grid) on any map size. Every tile samples the same delta -> exact stitching."""
+def _cached(kind, p, make):
+    """Per-params cache of the global passes (one map at a time keeps memory bounded)."""
     key = json.dumps(p, sort_keys=True)
-    if key not in _HYDRO_CACHE:
+    if (kind, key) not in _HYDRO_CACHE:
+        for k in [k for k in _HYDRO_CACHE if k[1] != key]:
+            del _HYDRO_CACHE[k]
+        _HYDRO_CACHE[(kind, key)] = make()
+    return _HYDRO_CACHE[(kind, key)]
+
+
+def _coarse(p):
+    """Coarse means of the pre-heights and of the shore mask, plus the cell size. Pre-heights are built tile by
+    tile (exact, thanks to the margin) and only their coarse means are kept: memory is O(coarse grid)."""
+    def make():
         W, L = p["width"], p["length"]
         c = hydraulic.cell_size(W, L)
         coarse = np.empty((L // c, W // c))
@@ -372,6 +414,15 @@ def _hydro_field(p):
         for (x0, z0, w, hh), (cp, sp) in zip(boxes, _pmap(_coarse_tile, p, boxes, workers)):
             sl = (slice(z0 // c, (z0 + hh) // c), slice(x0 // c, (x0 + w) // c))
             coarse[sl], shore[sl] = cp, sp
+        return coarse, shore, c
+    return _cached("coarse", p, make)
+
+
+def _hydro_field(p):
+    """Global pass, cached per params: the hydraulic delta on the coarse grid (and its cell size).
+    Every tile samples the same delta -> exact stitching."""
+    def make():
+        coarse, shore, c = _coarse(p)
         talus = hydraulic.relax_talus(c)
 
         def relax(H, n):  # cell units: talus is the tangent of the angle of repose
@@ -380,10 +431,27 @@ def _hydro_field(p):
         hard = smoothstep(np.percentile(coarse, hydraulic.HARD_FROM), coarse.max(), coarse)
         erodibility = shore * (1 - hydraulic.HARD_CAP * hard)
         eroded = hydraulic.erode(coarse, p["hydraulic"], p["seed"], erodibility, relax, cell=c)
-        delta = _blur(eroded - coarse, hydraulic.SMOOTH, weight=0.5)  # soften droplet-scale ripples
-        _HYDRO_CACHE.clear()  # one map at a time keeps memory bounded
-        _HYDRO_CACHE[key] = (delta, c)
-    return _HYDRO_CACHE[key]
+        return _blur(eroded - coarse, hydraulic.SMOOTH, weight=0.5), c  # soften droplet-scale ripples
+    return _cached("hydro", p, make)
+
+
+def _water_on(p):
+    return p["tributaries"] > 0 or p["lakes"] > 0
+
+
+def _water_net(p):
+    """Global stream/lake network on the coarse grid (after hydraulic erosion), cached per params."""
+    def make():
+        coarse, shore, c = _coarse(p)
+        E = coarse + _hydro_field(p)[0] * shore if p["hydraulic"] > 0 else coarse
+        rows, cols = E.shape
+        X, Z = np.meshgrid(np.arange(cols) * c + (c - 1) / 2, np.arange(rows) * c + (c - 1) / 2)
+        dist, _ = _river_geometry(p, X, Z)
+        outlet = (_coast(p, X, Z) < 0.999) | (dist < p["river_width"] / 2 + 2)
+        outlet[0, :] = outlet[-1, :] = outlet[:, 0] = outlet[:, -1] = True
+        inland = (_edge(p, X, Z) > p["edge_falloff"] + 24) & (dist > p["river_width"] / 2 + p["bank_width"] + 24)
+        return water.network(E, c, outlet, inland, p["water_level"], p["tributaries"], p["lakes"], p["seed"])
+    return _cached("water", p, make)
 
 
 def _sample(delta, c, X, Z):
@@ -399,27 +467,40 @@ def _sample(delta, c, X, Z):
 
 
 def _heights(p, q, X, Z, dist, span):
+    """(heights, coast, local water level or None). Lakes/streams are carved pointwise after the finish."""
     h, coast = _pre_heights(q, X, Z, dist, span)
     if p["hydraulic"] > 0:
         delta, c = _hydro_field(p)
         h = h + _sample(delta, c, X, Z) * _shore_mask(coast)
-    return _finish(q, X, Z, h, dist, coast)
+    h, coast = _finish(q, X, Z, h, dist, coast)
+    if not _water_on(p):
+        return h, coast, None
+    h, level = water.render(_water_net(p), X, Z, h, wet=h < p["water_level"])
+    return h, coast, level
 
 
 def generate_region(p: dict, x0: int, z0: int, w: int, h: int) -> dict:
     """Generate the [x0, x0+w) x [z0, z0+h) area of the map described by p."""
     m = margin(p)
     X, Z, dist, span, q = _grid(p, x0, z0, w, h)
-    height, coast = _heights(p, q, X, Z, dist, span)
+    height, coast, level = _heights(p, q, X, Z, dist, span)
     gz, gx = np.gradient(height)
     slope = np.degrees(np.arctan(np.hypot(gx, gz)))
     crop = (slice(m, m + h), slice(m, m + w))
+    wm = None
+    if level is not None:  # neighbourhood masks on the margin grid, so the cropped tile stays exact
+        lw = (level > 0) & (np.floor(height + 0.5) < level)
+        wm = {"lw": lw, "near2": _near(lw, 2), "near3": _near(lw, 3), "near_cave": _near(level > 0, CAVE_CLEARANCE),
+              "lmax": _local_max(np.where(lw, level, 0), 2)}
+        wm = {k: v[crop] for k, v in wm.items()}
     X, Z, height, slope, dist, coast = X[crop], Z[crop], height[crop], slope[crop], dist[crop], coast[crop]
     out = {"height": height.astype(np.float32), "slope": slope.astype(np.float32),
            "river_dist": dist.astype(np.float32), "coast": coast.astype(np.float32)}
-    out.update(_surface(regions.crop(q, crop), X, Z, height, slope, dist, coast))
+    if level is not None:  # key only present when lakes/streams are on: old params keep identical outputs
+        out["water_level"] = level[crop].astype(np.uint16)
+    out.update(_surface(regions.crop(q, crop), X, Z, height, slope, dist, coast, wm))
     if p["caves"] > 0:
-        out.update(_caves(p, X, Z, height, dist, coast))
+        out.update(_caves(p, X, Z, height, dist, coast, wm))
     return out
 
 
@@ -432,7 +513,11 @@ def generate_tiled(p: dict, tile: int = 128, workers: int = 1):
     workers > 1 generates tiles in parallel processes (same bits: every tile is a pure function)."""
     boxes = _boxes(p, tile)
     init = None
-    if workers > 1 and p["hydraulic"] > 0:
-        init = (json.dumps(p, sort_keys=True), _hydro_field(p))
+    if workers > 1 and (p["hydraulic"] > 0 or _water_on(p)):
+        if p["hydraulic"] > 0:
+            _hydro_field(p)
+        if _water_on(p):
+            _water_net(p)
+        init = dict(_HYDRO_CACHE)
     for (x0, z0, _, _), d in zip(boxes, _pmap(generate_region, p, boxes, workers, init)):
         yield x0, z0, d

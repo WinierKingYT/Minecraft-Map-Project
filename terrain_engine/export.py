@@ -12,7 +12,7 @@ from .generator import B, PARALLEL_FROM, T, WORKERS, generate, generate_tiled
 
 ROOT = Path(__file__).resolve().parent.parent
 HEIGHT_MAX = 320.0  # 16-bit PNG maps 0..65535 -> y 0..320 (WorldPainter fromLevels/toLevels)
-OPTIONAL_LAYERS = ("caverns", "chasms", "biomes")  # 8-bit PNGs, written only when generated
+OPTIONAL_LAYERS = ("caverns", "chasms", "biomes")  # water_level goes to WP as a sparse list (worldpainter.py)  # 8-bit PNGs, written only when generated
 PREVIEW_CELLS = 1024 // 3  # previews draw 3 px per sample: larger maps are subsampled to <= 1024 px
 
 _COLORS = {T["GRASS"]: (98, 150, 60), T["PODZOL"]: (110, 86, 46), T["COARSE_DIRT"]: (122, 92, 66),
@@ -55,8 +55,11 @@ def _colour_map(d, water_level, step=1):
     trees = (d["trees_deciduous"].astype(float) + d["trees_pine"]) / 15.0
     rgb *= (1 - 0.45 * np.clip(trees, 0, 1))[..., None]
     rgb *= (0.45 + 0.75 * _hillshade(d["height"] / step ** 0.5))[..., None]  # subsampled: relief kept readable
-    water = d["height"] < water_level
-    depth = np.clip(water_level - d["height"], 0, 6)[water]
+    surface = np.full(d["height"].shape, float(water_level))
+    if "water_level" in d:  # lakes / streams above the sea level
+        surface = np.where(d["water_level"] > 0, d["water_level"].astype(np.float64), surface)
+    water = np.floor(d["height"] + 0.5) < surface if "water_level" in d else d["height"] < water_level
+    depth = np.clip(surface - d["height"], 0, 6)[water]
     rgb[water] = np.stack([40 + 0 * depth, 90 - 6 * depth, 170 - 8 * depth], axis=-1)
     return np.clip(rgb, 0, 255).astype(np.uint8)
 
@@ -64,6 +67,8 @@ def _colour_map(d, water_level, step=1):
 def _oblique(d, water_level, cell=3, tilt=0.55, vscale=1.6, step=1):
     """Cheap 3D preview: voxel-space column render, viewed from the south (step blocks per sample)."""
     h = np.maximum(d["height"], water_level).astype(np.float64)
+    if "water_level" in d:
+        h = np.maximum(h, d["water_level"])
     colours = _colour_map(d, water_level, step)
     vscale = vscale / step ** 0.5  # subsampled maps: sqrt keeps relief readable, not 13x exaggerated
     rows, cols = h.shape
@@ -87,7 +92,7 @@ def preview_step(shape) -> int:
 def preview_fields(d: dict) -> dict:
     """Strided subsample of the fields for previews (the identity up to PREVIEW_CELLS per side)."""
     step = preview_step(d["height"].shape)
-    return {k: d[k][::step, ::step] for k in ("height", "terrain", "trees_deciduous", "trees_pine")}
+    return {k: d[k][::step, ::step] for k in ("height", "terrain", "trees_deciduous", "trees_pine", "water_level") if k in d}
 
 
 def write_outputs(p: dict, d: dict, out: Path) -> dict:

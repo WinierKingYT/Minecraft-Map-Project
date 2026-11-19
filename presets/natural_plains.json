@@ -1,4 +1,5 @@
 {"biomes": "on", "edge_falloff": 28, "description": "Open grassy plains with gentle undulation and scattered groves.",
  "biome": "plains", "mountain_height": 6, "hill_amplitude": 5, "valley_width": 0.0,
  "noise_scale": 260, "river_width": 7, "river_depth": 3, "tree_density": 0.35,
- "forest_coverage": 0.3, "rock_ratio": 0.1, "erosion": 0.8}
+ "forest_coverage": 0.3, "rock_ratio": 0.1, "erosion": 0.8,
+ "vegetation": 0.5}

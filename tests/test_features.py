@@ -9,15 +9,17 @@ from terrain_engine import params as P
 from terrain_engine.generator import B
 
 SEED = {"seed": "20261118"}
-OFF = {"caves": "0", "biomes": "off"}
+OFF = {"caves": "0", "biomes": "off", "tributaries": "0", "lakes": "0"}
 # sha256 over all output fields of a 128x96 map per preset with caves/biomes off. First recorded with v0.4.0 (before
 # Faz 3); re-recorded with v0.9.0, whose surface (rock mix, shores) and coast (10-deep sea) changes were intended.
-V040 = {"fantasy_forest_valley": "9c6757a75d77b8a804a4ac8b6113814ddccfb4d0b28f2f907ea5ebb510ef4d73",
+# Hydraulic presets re-recorded with v0.11.0: gentler walls on the 2-block erosion grid (FINE_TALUS/FINE_RELAX,
+# intended; the old constants reproduce the v0.9.0 hashes). Lakes/streams off here like caves/biomes.
+V040 = {"fantasy_forest_valley": "bae12d62918871be58ada86368fb070fa3842fe8897a6cdbf03682b18c36e95c",
         "forest_hills": "c983ead8fa51ca8098bc853a6cad12f0749949e46bfbe28b25f478a5e15f3dde",
-        "mountain_valley": "9569d9fbe09394a3ffdf2d31da37cc493a3e4be9a2580ff4f631b62fa2fe69eb",
+        "mountain_valley": "eb0448402053d9d9c54fee502088bfb5e69a90940781d1e0e1593f1960dcf15d",
         "natural_plains": "7efed3e48a477a7dff54c15930f59c7efbd9cad028b8bdd742584d1ffd09d002",
-        "river_valley": "a79c497e7b1672b50e53d2274b3d6fcdfb127afad0867a9a88c2fe06787723fb",
-        "rocky_cliffs": "951d4d51bd59db1289cbcf423e6fcf5d96333adbf1f00237fcb081f8485ac0c1",
+        "river_valley": "d1b27b808dcca13a76b1347c987b907c5cae2176cacd5919b038f632676c7899",
+        "rocky_cliffs": "a420c147ffef4efa856d316a8f24dab2fcc64ace99d0d3db67740cdba9ec716c",
         "west_forest_east_rocky": "10f7c5ac38d76645aa7cafabf5662ddd5e2a9d9106a7eeeee0e79e59298c18b1"}
 
 
