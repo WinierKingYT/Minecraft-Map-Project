@@ -56,6 +56,9 @@ def _tool(fn):
     return wrapper
 
 
+EDITS = EXPORTS / "edits"
+
+
 def _export_dir(export_dir: str) -> Path:
     out = Path(export_dir).resolve()
     if EXPORTS.resolve() not in out.parents or not (out / "params.json").exists():
@@ -175,12 +178,19 @@ def install_world(export_dir: str, new_name: str | None = None) -> dict:
 @_tool
 def edit_world(source: str, out: str, box: list[int], preset: str | None = None, overrides: dict | None = None,
                blend: float = 24) -> dict:
-    """Improve box [x0, z0, x1, z1] (x1/z1 exclusive) of an existing world, written to a NEW folder `out`.
-    Never writes the source; refuses an existing out, out inside the source, or out under %APPDATA%/.minecraft."""
+    """Improve box [x0, z0, x1, z1] (x1/z1 exclusive) of an existing world (read-only `source`, must hold level.dat).
+    `out` is a bare folder name; the result goes to exports/edits/<out> (agents may not write elsewhere)."""
     from terrain_engine.edit_world import edit_world as run
     if not (isinstance(box, list) and len(box) == 4 and all(isinstance(v, int) for v in box)):
         raise ValueError("box must be [x0, z0, x1, z1] integers")
-    return run(source, out, box, preset, overrides, blend)
+    if not P.NAME_RE.fullmatch(out or ""):
+        raise ValueError(f"out must be a bare name matching {P.NAME_RE.pattern}")
+    src = Path(source).resolve()
+    if not (src / "level.dat").is_file():
+        raise ValueError(f"source is not a Minecraft world (no level.dat): {source}")
+    dest = EDITS / out
+    EDITS.mkdir(parents=True, exist_ok=True)
+    return run(str(src), str(dest), box, preset, overrides, blend)
 
 
 # ---- live dev client (bridge/, Phase 11) -------------------------------------------------------------------------

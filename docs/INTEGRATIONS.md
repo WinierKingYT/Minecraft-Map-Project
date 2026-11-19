@@ -14,16 +14,16 @@
   `Caverns`, `Chasms`, `Caves` (4-bit), `Frost`, `Void` (1-bit), `Biomes` (BYTE, doğrudan eşleme), `Populate`, `Annotations`.
   Yok: `Biome`, `River`, `Flowers`, `Grass`, `Ferns`, `Plants` — bitki katmanı (`PlantLayer`) yalnız özel katman.
 - Biyom ID'leri (1.20.5 formatı): `Minecraft1_21Biomes.BIOMES_BY_MODERN_ID`; eski biyomlar klasik sayısal ID
-  (ocean 0, plains 1, windswept_hills 3, forest 4, taiga 5, river 7, beach 16, birch_forest 27, dark_forest 29),
+  (ocean 0, plains 1, windswept_hills 3, forest 4, taiga 5, river 7, beach 16, stony_shore 25, birch_forest 27, dark_forest 29),
   1.18+ biyomlar 246..254 (cherry_grove 246, frozen_peaks 249, grove 250, jagged_peaks 251, meadow 252,
   snowy_slopes 253, stony_peaks 254). 255 = otomatik. Varsayılan eşlemede siyah (0) atlanır → her değer açıkça eşlenmeli.
 - Caverns/Chasms: script dünyasında katman ayarı yok (null) → varsayılan `CavernsSettings` (surfaceBreaking=false,
   leaveWater=true, min/max sınırsız). Yoğunluk eşik gibi: 6 → kolonların %1.5'i, 10 → %12, 15 → %18 oyuldu.
 - Filtre: `wp.createFilter().exceptOnWater().go()` (belgedeki açıklama karışık, ama `exceptOnWater` doğru çalışıyor).
   Filtreyi ve katmanı `applyHeightMap()` başlamadan oluştur ("You forgot to invoke go()" hatası).
-- Kenar dikişi çözüldü (motor 0.2.0): `edge_falloff` (blok) haritayı gürültülü bir kıyıyla `water_level-3` deniz tabanına indirir;
-  `outside: "ocean"` dışa aktarımdan sonra level.dat'taki overworld jeneratörünü düz okyanusa çevirir
-  (bedrock/taş/4 kum/3 su, yüzey = water_level). Orijinal level.dat `level.dat.bak` olarak kalır.
+- Kenar dikişi çözüldü (motor 0.2.0; 0.9.0'da derinleşti): `edge_falloff` (blok) haritayı gürültülü bir kıyıyla
+  `water_level-10` (`SEA_DEPTH`) deniz tabanına indirir; `outside: "ocean"` dışa aktarımdan sonra level.dat'taki overworld
+  jeneratörünü düz okyanusa çevirir (bedrock/taş/4 kum/10 su, yüzey = water_level). Orijinal level.dat `level.dat.bak` olarak kalır.
   `outside: "vanilla"` eski davranış (harita dışı normal Minecraft arazisi).
 
 - **Büyük export (Faz 6, ölçüldü):** 4096² (65 536 chunk, 64 region) tek `exportWorld` çağrısıyla sorunsuz; parçalı export gerekmedi.
@@ -50,15 +50,18 @@
   Oyun da JDK 25'te sorunsuz çalıştı (yalnız `sun.misc.Unsafe` uyarıları). JDK 21 indirmeye gerek olmadı.
 - İndirilen (resmî kaynaklar): wrapper betikleri/jar GitHub FabricMC şablonundan (jar SHA-256 = services.gradle.org), Minecraft 1.21.4
   + kütüphaneler Mojang'dan (~143 MB loom önbelleği, ~100 MB yeni asset), Fabric/Yarn maven.fabricmc.net'ten (~70 MB). Gradle 9.8.2
-  dağıtımı `~/.gradle` içinde zaten vardı. `run/` ~32 MB (ekran görüntüleri `run/screenshots` içinde birikir).
+  dağıtımı `~/.gradle` içinde zaten vardı. `run/` ~32 MB (0.9.0'dan beri `tour()` görüntüyü `run/screenshots`'tan taşır, birikmez).
 - Yarn API'leri: `MinecraftClient.submit(Supplier)`, `createIntegratedServerLoader().start(name, onCancel)`,
   `getLevelStorage().getSavesDirectory()`, `worldRenderer.getCompletedChunkCount()/isTerrainRenderComplete()`,
   `ScreenshotRecorder.saveScreenshot(runDir, "ad.png", getFramebuffer(), cb)` (asenkron yazar; geri çağrı beklenir),
   `world.disconnect()` + `disconnect(new MessageScreen(...))`, `options.hudHidden`, `getWindow().setWindowedSize()`,
   `ServerPlayerEntity.getCommandSource().withOutput(sink).withLevel(4)` + `getCommandManager().executeWithPrefix()` (sunucu iş parçacığında),
   `ClientTickEvents.END_CLIENT_TICK` (tick sayacı). HTTP: JDK `com.sun.net.httpserver` (ek bağımlılık yok).
-- Notlar: 1.21.4 eski (DataVersion 3837) dünyayı onay ekranı olmadan açtı. Açılışta "key missing: DragonFight" ve sunucuda bir
-  "Not a string" ERROR satırı çıkıyor; dünya sorunsuz yükleniyor (kaynağı araştırılmadı). Spektatör blok içindeyse x-ray gibi
+- Notlar: 1.21.4 eski (DataVersion 3837) dünyayı onay ekranı olmadan açtı. Açılışta "key missing: DragonFight" (zararsız,
+  End verisi yok) çıkıyor. **"Not a string" çözüldü (0.9.0):** WP 2.27.1 level.dat'ta `Data.Player` içine `SpawnX/Y/Z` yazıyor ama
+  `SpawnDimension` (ve `Dimension`) yazmıyor; 1.21.4 oyuncuyu yüklerken eksik boyut anahtarını string olarak çözmeye çalışıp bu
+  ERROR'u basıyor (varsayılan overworld'e düşüyor). `worldpainter.fix_player_dimension` ikisini `minecraft:overworld` olarak ekliyor;
+  düzeltilmiş dünyalarda satır yok. Kaynak WP; bizim `set_outside_ocean` değişikliğiyle ilgisi yok. Spektatör blok içindeyse x-ray gibi
   görünür → mağara kamerası dünyadaki gerçek hava boşluğuna konur (`find_cave`) + gece görüşü. Bulutlar (y≈192) genel bakışı
   kapattığı için `renderClouds:"false"`. Kamera = `gamemode spectator` + `tp @s x y z yaw pitch`.
 

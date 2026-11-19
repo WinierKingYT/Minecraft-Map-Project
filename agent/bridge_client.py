@@ -311,7 +311,7 @@ def auto_viewpoints(p: dict, f: dict) -> list[dict]:
     if p.get("caves", 0) > 0 and "caverns" in f:
         cav = np.where(interior & (h > wl + 4), np.asarray(f["caverns"], dtype=np.float64), -1)
         if cav.max() > 0:
-            vz, vx = np.unravel_index(int(np.argmax(cav)), h.shape)
+            vz, vx = np.unravel_index(int(np.argmax(_box_mean(cav, 8))), h.shape)  # middle of a big patch
             y = float(h[vz, vx]) - 14
             views.append(look_at("cave", (vx + 0.5, y, vz + 0.5), (vx + 20.5, y - 6, vz + 0.5), night_vision=True))
     return views
@@ -327,6 +327,8 @@ def find_cave(world_dir: Path, x: float, z: float, r: int = 32) -> tuple | None:
     top = columns(ids, pal)["top"] - Y_MIN
     ys = np.arange(ids.shape[0])[:, None, None]
     air &= (ys <= top[None] - 8) & (ys > 4)
+    zs, xs = np.mgrid[0:ids.shape[1], 0:ids.shape[2]]  # load_area rounds out to whole chunks: keep to the window
+    air &= ((np.abs(xs + a["gx0"] - int(x)) <= r) & (np.abs(zs + a["gz0"] - int(z)) <= r))[None]
     if not air.any():
         return None
     k = 4  # roominess = air count in a 9^3 window (summed-volume table)

@@ -78,8 +78,9 @@ def test_values_actually_change(split):
 
 
 def _seam_metrics(blend):
-    # erosion 0: thermal erosion would also hide a hard cut, so test the raw blend
-    p = P.load("forest_hills", {**BASE, "erosion": "0", "regions": [
+    # erosion 0: thermal erosion would also hide a hard cut, so test the raw blend; edge_falloff 0: the coastal
+    # cap (v0.9) bends the control strips near the border, which would dilute the hard-cut control ratio
+    p = P.load("forest_hills", {**BASE, "erosion": "0", "edge_falloff": "0", "regions": [
         {"shape": "half", "side": "east", "blend": blend, "preset": "rocky_cliffs"}]})
     h = G.generate(p)["height"].astype(np.float64)
     lap = np.abs(4 * h[1:-1, 1:-1] - h[:-2, 1:-1] - h[2:, 1:-1] - h[1:-1, :-2] - h[1:-1, 2:])

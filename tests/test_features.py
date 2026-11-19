@@ -10,14 +10,15 @@ from terrain_engine.generator import B
 
 SEED = {"seed": "20261118"}
 OFF = {"caves": "0", "biomes": "off"}
-# sha256 over all output fields of a 128x96 map per preset, recorded with engine v0.4.0 (before Faz 3)
-V040 = {"fantasy_forest_valley": "1e5fba29fc0024df62ec5159a07e4dd6e7a4e9e40f39ec612e64ee37752ce77f",
-        "forest_hills": "ce9f1947c052ce8fb6a0a11c8cb0d9a762d07e2aa034ea3b4ef9fead14aca7a8",
-        "mountain_valley": "67941c1212c4843379ceb365535730b81ec35799d32286bd8547f1514dd723cd",
-        "natural_plains": "e023ccc812b5d39c30af8d924b553a00cfee1f46f2cae3ba1a3e028825456154",
-        "river_valley": "cd55b2b70ad9c189797791c3e5dcfee2950cd02c2a4a30708e929513a10fe6cf",
-        "rocky_cliffs": "a178a8f437754420d645f815c54d7afbdf0b6471d34721623bfd601d7cf2f5c3",
-        "west_forest_east_rocky": "4c26ec36056d61b4bf332bbc3bb3adb7d0289a03d55e9459eabf2cdb2742838e"}
+# sha256 over all output fields of a 128x96 map per preset with caves/biomes off. First recorded with v0.4.0 (before
+# Faz 3); re-recorded with v0.9.0, whose surface (rock mix, shores) and coast (10-deep sea) changes were intended.
+V040 = {"fantasy_forest_valley": "9c6757a75d77b8a804a4ac8b6113814ddccfb4d0b28f2f907ea5ebb510ef4d73",
+        "forest_hills": "c983ead8fa51ca8098bc853a6cad12f0749949e46bfbe28b25f478a5e15f3dde",
+        "mountain_valley": "9569d9fbe09394a3ffdf2d31da37cc493a3e4be9a2580ff4f631b62fa2fe69eb",
+        "natural_plains": "7efed3e48a477a7dff54c15930f59c7efbd9cad028b8bdd742584d1ffd09d002",
+        "river_valley": "a79c497e7b1672b50e53d2274b3d6fcdfb127afad0867a9a88c2fe06787723fb",
+        "rocky_cliffs": "951d4d51bd59db1289cbcf423e6fcf5d96333adbf1f00237fcb081f8485ac0c1",
+        "west_forest_east_rocky": "10f7c5ac38d76645aa7cafabf5662ddd5e2a9d9106a7eeeee0e79e59298c18b1"}
 
 
 def _digest(d):
@@ -88,8 +89,9 @@ def test_biome_classes_where_expected(valley):
 
 
 def test_alpine_biomes():
+    # edge_falloff 0: on a 128-block map the v0.9 coastal cap would flatten every peak (they all lie near the border)
     p = P.load("mountain_valley", {**SEED, "width": "128", "length": "128", "mountain_height": "160",
-                                   "tree_line": "110", "snow_line": "140"})
+                                   "tree_line": "110", "snow_line": "140", "edge_falloff": "0"})
     b = G.generate(p)["biomes"]
     assert {B["MEADOW"], B["SNOWY_SLOPES"]} & set(np.unique(b).tolist())
 

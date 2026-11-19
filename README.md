@@ -3,6 +3,10 @@
 Parametrik, deterministik arazi motoru → WorldPainter (headless) → Minecraft Java 1.21.4 dünyası.
 AI yalnızca JSON parametresi seçer; blok hesabı yerel Python/Java'da yapılır.
 
+Repo (private): https://github.com/WinierKingYT/Minecraft-Map-Project — `tools/`, `exports/`, `.venv`, Axiom/Mojang jar'ları
+ve `bridge/run` repoda yok; WorldPainter 2.27.1 portable zip'i `tools/worldpainter/` altına açılmalı, Axiom jar'ı
+`tools/downloads/axiom/` altına konmalı (sürümler: `config/environment.json`).
+
 ## Hızlı kullanım
 
 ```powershell
@@ -99,7 +103,7 @@ Ajan Minecraft'ı kendisi açar, test dünyasını açar, kamerayı konumlar ve 
   (PATH'teki Temurin 25 otomatik; başka yer için `BRIDGE_JAVA_HOME`). İlk açılış indirmeyle ~4-5 dk, sonra ~16 sn.
 - Dünya `bridge/run/saves` içine yeni adla kopyalanır (komutlar açık), görüntüler `exports/<..>/previews/ingame/*.png` (1280×720).
 - Köprü yalnız `127.0.0.1:25580`, her açılışta yeni jeton (`bridge/run/bridge_token.txt`). MCP: `game_start`, `game_status`,
-  `game_command`, `ingame_tour`, `game_stop` (bkz. `agent/AGENT.md`). Örnek görüntüler: `previews/ingame_fantasy_valley_256/`.
+  `game_command`, `ingame_tour`, `game_stop` (bkz. `agent/AGENT.md`). Örnek görüntüler: `previews/ingame_fantasy_valley_256/`; v0.9.0 önce/sonra: `previews/phase7/`.
 
 ## Klasörler
 

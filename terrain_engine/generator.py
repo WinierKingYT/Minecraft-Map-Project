@@ -89,8 +89,12 @@ def _blur(h, passes, weight=0.5):
 
 
 SEA_DEPTH = 10  # sea floor at the map border = water_level - 10, matching the flat ocean written outside the map
-SHORE_STEEP = 20.0  # degrees: steeper shore cells are rocky (stony shore), gentler ones are beaches
-MOUNTAIN_COAST = 1.0  # mountains also fade over the coast band (twice, with the coast fade): no wall into the sea
+SHORE_STEEP = 30.0  # degrees: steeper shore cells are rocky (stony shore), gentler ones are beaches
+COAST_CURVE = 0.06  # coastal ceiling = wl + 2 + grad * (e - fall / 2) + COAST_CURVE * max(e - 0.85 * fall, 0)^2
+
+
+def _edge(p, X, Z):
+    return np.minimum(np.minimum(X, p["width"] - 1 - X), np.minimum(Z, p["length"] - 1 - Z))
 
 
 def _coast(p, X, Z, inner=1.0):
@@ -98,9 +102,32 @@ def _coast(p, X, Z, inner=1.0):
     fall = p["edge_falloff"]
     if fall <= 0:
         return np.ones_like(X, dtype=np.float64)
-    e = np.minimum(np.minimum(X, p["width"] - 1 - X), np.minimum(Z, p["length"] - 1 - Z))
+    e = _edge(p, X, Z)
     wobble = fbm(X / 40.0, Z / 40.0, p["seed"] + 97, octaves=3) * 0.35 * fall * smoothstep(0, fall * 0.5, e)
     return smoothstep(2.0, max(fall * inner, 3.0), e + wobble)
+
+
+def _cap_coast(p, X, Z, h):
+    """Soft min with a ceiling rising inland from the sea floor at the border, so high ground steps down to the
+    sea instead of dropping as a wall. Its noisy gradient leaves gentle (beach) and steep (cliff) stretches."""
+    if p["edge_falloff"] <= 0:
+        return h
+    e = _edge(p, X, Z)
+    # beach stretches (14 deg) alternate with cliff stretches (72 deg: mountains reach the sea as rocky shore)
+    grad = 0.25 + 2.75 * smoothstep(-0.15, 0.15, fbm(X / 64.0, Z / 64.0, p["seed"] + 99, octaves=2))
+    fall = p["edge_falloff"]
+    ceiling = p["water_level"] + 2 + grad * (e - fall / 2) + COAST_CURVE * np.maximum(e - 0.85 * fall, 0) ** 2
+    return -2.0 * np.logaddexp(-h / 2.0, -ceiling / 2.0)
+
+
+def _shelf(p, X, Z, h, coast):
+    """Fade to the outside sea floor: the sea bed rises over the outer part of the coast band to just under the
+    water, land above it rises over the inner part, so low shores are gentle beaches. Exact seabed at the border."""
+    if p["edge_falloff"] <= 0:
+        return h
+    seabed, top = p["water_level"] - SEA_DEPTH, p["water_level"] - 1.5
+    under = np.minimum(h, top)
+    return seabed + (under - seabed) * smoothstep(0.0, 0.45, coast) + (h - under) * smoothstep(0.25, 1.0, coast)
 
 
 def _pre_heights(p, X, Z, dist, span):
@@ -119,15 +146,13 @@ def _pre_heights(p, X, Z, dist, span):
                    gain=0.38 + 0.12 * p["roughness"], sharpness=p["ridge_sharpness"])
     broad = fbm(wx / (sc * 2.5), wz / (sc * 2.5), s + 23, octaves=3) * 0.5 + 0.5
     mountain = p["mountain_height"] * v ** 1.2 * (0.3 + 0.7 * ridge) * (0.6 + 0.4 * broad)
-    mountain = mountain * _coast(p, X, Z, inner=MOUNTAIN_COAST)
     hills = fbm(wx / (sc * 0.35), wz / (sc * 0.35), s + 5, octaves=p["octaves"],
                 gain=0.3 + 0.3 * p["roughness"]) * p["hill_amplitude"] * (0.35 + 0.65 * v)
     h = p["base_height"] + hills + mountain
 
-    # coast: fade everything to the flat sea floor of the outside ocean, so the map edge has no seam
-    seabed = wl - SEA_DEPTH
+    # coast: step down to the flat sea floor of the outside ocean, so the map edge has no seam
     coast = _coast(p, X, Z)
-    h = seabed + (h - seabed) * coast
+    h = _shelf(p, X, Z, _cap_coast(p, X, Z, h), coast)
 
     if np.any(p["cliffiness"] > 0):
         step = p["terrace_step"]
@@ -153,19 +178,19 @@ def _finish(p, X, Z, h, dist, coast):
         h = bank_h + (h - bank_h) * smoothstep(hw, hw + 2 * p["bank_width"] + 2, dist)
         bed = wl - p["river_depth"] * (1 - np.clip(dist / max(hw, 1e-6), 0, 1) ** 2) + 0.4 * perlin(X / 11, Z / 11, s + 83)
         h = np.where(dist < hw, np.minimum(h, np.minimum(bed, wl - 0.6)), h)
+    h = _cap_coast(p, X, Z, h)  # river banks must not stick out into the sea
     inland = coast > 0.999
     h = np.where(inland & ~(dist < hw), np.maximum(h, wl + 1.0), h)
-    h = seabed + (h - seabed) * _coast(p, X, Z, inner=0.35)  # river banks must not stick out into the sea
+    h = seabed + (h - seabed) * _coast(p, X, Z, inner=0.35)  # exact sea floor at the border
     return _blur(h, 1, weight=0.35), coast
 
 
-def _rock_mix(n3, n4):
-    """Natural rock from pure blocks in irregular patches: stone, andesite, tuff, gravel pockets, calcite."""
+def _rock_mix(n2, n3, n4):
+    """Natural rock from pure blocks in irregular patches: stone, andesite, tuff, gravel pockets."""
     r = np.full(n3.shape, T["STONE"], dtype=np.uint8)
-    r[n3 > 0.15] = T["ANDESITE"]
-    r[n4 > 0.4] = T["TUFF"]
-    r[(n4 < -0.4) & (n3 < 0.05)] = T["GRAVEL"]
-    r[(n3 < -0.45) & (n4 > 0.05)] = T["CALCITE"]
+    r[n2 + 0.6 * n3 > 0.0] = T["ANDESITE"]  # broad zones with ragged edges
+    r[n4 > 0.22] = T["TUFF"]
+    r[(n4 < -0.35) & (n3 < 0.1)] = T["GRAVEL"]
     return r
 
 
@@ -178,7 +203,7 @@ def _surface(p, X, Z, h, slope, dist, coast):
     n3 = fbm(X / 9.0, Z / 9.0, s + 73, octaves=2)  # fine patches: rock mix, ragged rock edge
     n4 = fbm(X / 17.0, Z / 17.0, s + 74, octaves=3)
     biome = p["biome"]  # str, or per-cell str array when regions set it
-    rocks = _rock_mix(n3, n4)
+    rocks = _rock_mix(n2, n3, n4)
 
     forest = smoothstep(-0.08, 0.08, fbm(X / 110.0, Z / 110.0, s + 91, octaves=4) * 0.5 + 0.5 - (1 - p["forest_coverage"]))
     t = np.full(h.shape, T["GRASS"], dtype=np.uint8)
@@ -194,12 +219,13 @@ def _surface(p, X, Z, h, slope, dist, coast):
     t[alpine & (n2 > 0.2)] = rocks[alpine & (n2 > 0.2)]
 
     # rock only where really steep; fine noise makes its edge ragged so grass creeps up the gentler parts
-    rock_thr = 55 - 16 * p["rock_ratio"] + 6 * n1 + 5 * n3 - np.where(biome == "rocky", 8.0, 0.0)
+    rock_thr = 60 - 16 * p["rock_ratio"] + 6 * n1 + 5 * n3 - np.where(biome == "rocky", 8.0, 0.0)
     scree = (slope > rock_thr - 10) & (slope <= rock_thr)
     t[scree & (n3 > 0.25)] = T["GRAVEL"]
     t[scree & (n3 < -0.2)] = T["COARSE_DIRT"]
     rock = slope > rock_thr
     t[rock] = rocks[rock]
+    t[rock & (slope < rock_thr + 6) & (n4 > 0.2) & (n3 < -0.15)] = T["COARSE_DIRT"]  # soil pockets on ledges
     t[(h > p["snow_line"] + 6 * n1) & (slope < 42)] = T["SNOW"]
 
     if hw > 0:

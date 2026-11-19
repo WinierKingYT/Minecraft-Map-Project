@@ -9,10 +9,11 @@ from terrain_engine import hydraulic as H
 from terrain_engine import params as P
 
 SEED = {"seed": "20261118"}
-# sha256 over all output fields of a 128x96 map, recorded with engine v0.3.0 (before hydraulic existed)
-V030 = {"fantasy_forest_valley": "e7853965c4e8d621d038b1c9a8c7913a072978658e46f2bd3dc85edd49611b8a",
-        "west_forest_east_rocky": "4c26ec36056d61b4bf332bbc3bb3adb7d0289a03d55e9459eabf2cdb2742838e",
-        "mountain_valley": "3ae3434b768a31b05986390a1dea4f7221da32ff02e3e9c530483de523437372"}
+# sha256 over all output fields of a 128x96 map with hydraulic=0 (and caves/biomes off). First recorded with v0.3.0
+# (before hydraulic existed); re-recorded with v0.9.0, whose surface and coast changes were intended.
+V030 = {"fantasy_forest_valley": "6e04e45a4aa8031f60a254fecd8b5190b13673c3e6ef70e78a5b0aba333dc8e8",
+        "west_forest_east_rocky": "10f7c5ac38d76645aa7cafabf5662ddd5e2a9d9106a7eeeee0e79e59298c18b1",
+        "mountain_valley": "90a18876d41c583962123b6eecfe9b6a64d23f341751efab283bec2b11a8ac4c"}
 
 
 def _digest(d):

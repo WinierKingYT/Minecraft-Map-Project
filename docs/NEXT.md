@@ -54,7 +54,10 @@ MC 1.21.4 sunucu yükleme testi, kenar sönümü + harita dışı düz okyanus, 
   localhost köprü modu: dünya aç, kamera konumla, ekran görüntüsü al, komut çalıştır. Agent oyunu kendisi açıp kontrol eder.
   Sonuç: `bridge/` + `agent/bridge_client.py` + 5 MCP aracı; fantasy_valley_256 turu 6 gerçek oyun içi görüntü (~40 sn, açılış ~16 sn),
   `previews/ingame_fantasy_valley_256/`; kısa çimen, biyom renkleri ve mağara görüldü.
-- `[ ]` **Faz 7 — oyun içi kontrol:** köprüyle otomatik ekran görüntüleri; çimen, biyom renkleri, mağaralar, kıyı, 4096² harita.
+- `[x]` **Faz 7 — oyun içi kontrol:** köprüyle otomatik ekran görüntüleri; çimen, biyom renkleri, mağaralar, kıyı, 4096² harita.
+  Sonuç (v0.9.0): 3 preset (256²) önce/sonra turu, `previews/phase7/`; çizgili çıplak kaya → saf blok karışımı + daha çok çimen,
+  kıyı duvarı → kumsal/kayalık kıyı karışımı, deniz 10 blok, "Not a string" düzeldi. 4096² oyun içi turu yapılmadı.
+  Kalan: en dik yamaçlar hâlâ geniş gri yüzeyler (geometri; Faz 9'daki dik yamaç işi).
 - `[ ]` **Faz 8 — doğal dil komutu:** "batıya orman ekle" → `regions` JSON → MCP `generate`/`edit_world`; tek komut/skill.
 - `[ ]` **Faz 9 — görsel kalite:** nehir kolları ve göller, 256² dik yamaç p90'ı, özel ağaç objeleri, bitki `.layer` dosyaları.
 - `[ ]` **Faz 10 — edit-world v2:** düzenlenen alana ağaç/biyom yerleştirme, mağara tavanı koruması.
@@ -74,3 +77,4 @@ MC 1.21.4 sunucu yükleme testi, kenar sönümü + harita dışı düz okyanus, 
 - 2026-11-19: Faz 6 tamam (v0.7.0) — ölçek-duyarlı hidrolik, paralel parçalı üretim, akışlı verify/anvil_fix; 4096² uçtan uca (WP tek parça, bölmeye gerek yok).
 - 2026-11-19: Faz 11 tamam (v0.8.0) — Loom dev istemcisi + localhost köprü modu; ajan oyunu kendisi açıp 6 ekran görüntüsü aldı ve kapattı.
 - 2026-11-19: Faz 6 doğrulandı (104 test; 4096² verify %100, sunucu 52/52). MCP `generate` parçalı üretimi destekliyor.
+- 2026-11-19: Faz 7 tamam (v0.9.0) — oyun içi önce/sonra: kaya karışımı, kıyı/deniz derinliği, "Not a string" (WP level.dat Player boyutu) düzeltildi; 127 test, verify %100, sunucu 52/52 ×3.

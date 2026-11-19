@@ -144,3 +144,14 @@ def test_anvil_fix_renames_legacy_grass(valley, tmp_path):
     assert "minecraft:grass" not in names and "minecraft:short_grass" in names
     assert anvil_fix.fix_world(copy) == 0  # idempotent
     assert verify(copy, p, d)["land_height_within_1_pct"] >= 99.0  # rewritten region still reads back
+
+
+def test_player_dimension_fix(tmp_path):
+    """WP's level.dat lacks Player.SpawnDimension/Dimension -> MC logs "Not a string"; the fix adds both once."""
+    import nbtlib
+    from terrain_engine.worldpainter import fix_player_dimension
+    nbtlib.File({"Data": nbtlib.Compound({"Player": nbtlib.Compound({"SpawnX": nbtlib.Int(1)})})},
+                gzipped=True).save(tmp_path / "level.dat")
+    assert fix_player_dimension(tmp_path) and not fix_player_dimension(tmp_path)
+    player = nbtlib.load(tmp_path / "level.dat")["Data"]["Player"]
+    assert player["SpawnDimension"] == player["Dimension"] == "minecraft:overworld"

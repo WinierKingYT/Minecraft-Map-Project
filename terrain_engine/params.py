@@ -3,6 +3,7 @@
 The AI (or the user) only edits these JSON values; all block math is local.
 """
 import json
+import re
 from pathlib import Path
 
 from . import regions as R
@@ -59,11 +60,17 @@ def defaults() -> dict:
     return d
 
 
+NAME_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
+
+
 def validate(p: dict) -> dict:
     unknown = set(p) - set(NUMERIC) - set(CHOICES) - {"name", "description", "regions"}
     if unknown:
         raise ValueError(f"unknown parameter(s): {sorted(unknown)}")
     out = dict(p)
+    # name becomes a folder under exports/ that may be rmtree'd: no path separators or "..", ever
+    if not isinstance(out.get("name"), str) or not NAME_RE.fullmatch(out["name"]):
+        raise ValueError(f"name must match {NAME_RE.pattern}, got {out.get('name')!r}")
     for k, (_, lo, hi) in NUMERIC.items():
         v = out[k]
         if not isinstance(v, (int, float)) or isinstance(v, bool):

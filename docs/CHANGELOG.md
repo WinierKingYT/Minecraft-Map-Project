@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## 0.9.0 — 2026-11-19 (Faz 7: oyun içi kontrol)
+- Güvenlik: `name` yalnız `[A-Za-z0-9_-]{1,64}` (exports altında rmtree edilen klasör adı; yol/`..` reddedilir). MCP `edit_world` çıktısı yalnız `exports/edits/<ad>`; kaynak `level.dat` içermeli.
+- Oyunda görülen: yamaçlar çıplak gri taş + düzenli yatay çizgiler (WP `Rock`/`Stone mix` yüksekliğe göre katmanlı karışım),
+  dağlar 1 bloklu kum şeritle denize duvar gibi iniyordu, deniz her yerde 3 blok derin, her açılışta "Not a string" hatası.
+- Kaya: yalnız saf bloklar, gürültü lekeleriyle (`_rock_mix`: taş, geniş andezit bölgeleri, tüf, çakıl cepleri); `ROCK`/`STONE_MIX`
+  artık yüzeyde kullanılmıyor. Kaya eşiği yükseldi (`60 - 16·rock_ratio`, ince gürültüyle pürüzlü kenar) → çimen/kaba toprak/podzol
+  yamaçlara tırmanıyor; açık yamaçta toprak lekeleri, kaya içinde toprak cepleri; eğimli çimen çıkıntılarında seyrek ağaç.
+  Kara içinde kaya oranı: fantasy %35→%15, mountain_valley %45→%24 (256²).
+- Kıyı: `SEA_DEPTH` 3→10; harita dışı düz okyanus 10 su (sunucu testi yoklamaları da). `_cap_coast`: kenardan içeri yükselen
+  gürültülü bir tavan (yumuşak min) — bazı kesimlerde ~14° (kumsal), bazılarında ~72° (kayalık kıyı). `_shelf`: deniz tabanı kıyı
+  bandının dışında hızla yükselir, kara içte → alçak kıyılar yumuşak. Kıyı yüzeyi: dik = kaya/çakıl (`stony_shore` biyomu, ID 25),
+  yumuşak = kum + çakıllı kumsal; deniz tabanı kum/çakıl/kil lekeleri. Kıyı şeridi (su ±2) eğim medyanı fantasy 47→29°, mountain_valley 51→30°, rocky 58→32°.
+  Bedel: 256² haritada kara %85→%72; 128² gibi küçük haritada kenara yakın zirveler alçalır.
+- "Not a string": WP level.dat'ında `Player.SpawnDimension`/`Dimension` yok → `fix_player_dimension` ekliyor (her export'ta).
+- Köprü: `tour()` ekran görüntüsünü `bridge/run/screenshots`'tan taşır (birikmez); `find_cave` aramayı istenen pencereyle sınırlar
+  (chunk yuvarlaması 32+15 blok uzağa kaçırıyordu); otomatik mağara kamerası en büyük mağara lekesinin ortasında.
+- Testler: v0.3/v0.4 "özellik kapalı" özetleri v0.9.0 ile yeniden kaydedildi (yüzey/kıyı değişikliği kasıtlı); `test_alpine_biomes`
+  ve bölge dikiş testi `edge_falloff=0` (kıyı tavanı ölçümü karıştırıyordu); `fix_player_dimension` testi eklendi.
+- Önce/sonra oyun içi görüntüler: `previews/phase7/` (fantasy_valley, mountain_valley, rocky_cliffs; 256², seed 20261118).
+
 ## 0.8.0 — 2026-11-19 (Faz 11: canlı istemci köprüsü)
 - `bridge/`: Fabric Loom geliştirme projesi (MC 1.21.4, Yarn 1.21.4+build.8, Loader 0.19.5, Fabric API 0.119.4+1.21.4,
   Loom 1.19-SNAPSHOT, Gradle 9.8.2 wrapper — fabric-example-mod 1.21.4 dalından; wrapper jar SHA-256 Gradle'ın yayınladığıyla aynı).

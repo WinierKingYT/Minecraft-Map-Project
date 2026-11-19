@@ -83,21 +83,35 @@ def test_server_load_test_tool(small_export):
     assert S.server_load_test(small_export["out"])["ok"] is True
 
 
-def test_edit_world_tool_safety_and_run(tmp_path):
+def test_edit_world_tool_safety_and_run():
+    import shutil
     from terrain_engine.export import output_dir
     p = S.P.load("natural_plains", {"name": "natural_plains_256"})
     src = output_dir(p) / "world" / p["name"]
     if not (src / "level.dat").exists():
         pytest.skip("natural_plains_256 world not exported (tests/test_edit_world.py exports it)")
-    with pytest.raises(S.ToolError, match="ValueError"):
-        S.edit_world(str(src), str(src), [64, 64, 128, 128], "forest_hills")
+    for bad_out in (str(src), "../escape", "a/b", r"C:\x", ""):  # only bare names, written under exports/edits
+        with pytest.raises(S.ToolError, match="out must be a bare name"):
+            S.edit_world(str(src), bad_out, [64, 64, 128, 128], "forest_hills")
+    with pytest.raises(S.ToolError, match="no level.dat"):
+        S.edit_world(str(src.parent), "x", [64, 64, 128, 128], "forest_hills")
     with pytest.raises(S.ToolError, match="box"):
-        S.edit_world(str(src), str(tmp_path / "a"), [64, 64, 128], "forest_hills")
-    (tmp_path / "taken").mkdir()
-    with pytest.raises(S.ToolError, match="FileExistsError"):
-        S.edit_world(str(src), str(tmp_path / "taken"), [64, 64, 128, 128], "forest_hills")
-    r = S.edit_world(str(src), str(tmp_path / "w"), [64, 64, 128, 128], "forest_hills", {"seed": 3}, 16)
-    assert r["chunks_written"] == 16 and r["edge_jump_added_max"] <= 2 and (tmp_path / "w" / "level.dat").exists()
+        S.edit_world(str(src), "pytest_edit", [64, 64, 128], "forest_hills")
+    dest = S.EDITS / "pytest_edit"
+    shutil.rmtree(dest, ignore_errors=True)
+    try:
+        r = S.edit_world(str(src), "pytest_edit", [64, 64, 128, 128], "forest_hills", {"seed": 3}, 16)
+        assert r["chunks_written"] == 16 and r["edge_jump_added_max"] <= 2 and (dest / "level.dat").exists()
+        with pytest.raises(S.ToolError, match="FileExistsError"):
+            S.edit_world(str(src), "pytest_edit", [64, 64, 128, 128], "forest_hills")
+    finally:
+        shutil.rmtree(dest, ignore_errors=True)
+
+
+def test_name_param_rejects_paths():
+    for bad in ("../x", "a/b", r"a\b", "", "x" * 65):
+        with pytest.raises(ValueError, match="name must match"):
+            S.P.load("natural_plains", {"name": bad})
 
 
 def test_generate_tiled_matches_full_and_rejects_bad_tile():
