@@ -11,10 +11,16 @@ AI yalnızca plan/parametre üretir; blok hesabı yerel motorda. Hangi model kul
 doğal dil planlayıcı, Fabric köprü istemcisi (AI oyunu açıp ekran görüntüsü alır). 155 test.
 Ayrıntı: `docs/CHANGELOG.md`, `docs/INTEGRATIONS.md`, `README.md`, `agent/AGENT.md`.
 
+## Hedef sürüm (kullanıcı kararı, 2026-11-19)
+Sunucu **Minecraft 26.2**; daha eski istemciler (≈1.21.x, en eskisi netleşince güncelle) ViaVersion/ViaBackwards ile girer.
+Kural: harita sunucu sürümüne göre üretilir; yalnız en eski istemcide de var olan blok/biyomlar kullanılır
+(eskide olmayanlar ViaBackwards ile ikame edilir, görüntü bozulabilir). Dünya yükseltmesi tek yönlüdür.
+
 ## Sıradaki işler (bu sırayla)
 | # | İş | Kabul |
 |---|---|---|
-| 1 | Faz 9b — su ağı düzeltmeleri (1024²+ düz dereler, boncuk göller, çiçek/çalı dengesi) | oyun içi önce/sonra görüntü |
+| 1 | G — hedef sürüm: `target_version` (WP formatı 1.20.5–1.21.10 / 1.21.11 / 26.1+ seçimi), en eski istemci için blok+biyom kontrolü, 26.2 resmî sunucuda yükleme testi; köprü istemcisi ve Axiom'u 26.2'ye taşı (Axiom 6.1.5'in 26.2 sürümü var) | 26.2 sunucuda verify + probe geçer; uyumsuz blok uyarısı |
+| 1b | Faz 9b — su ağı düzeltmeleri (1024²+ düz dereler, boncuk göller, çiçek/çalı dengesi) | oyun içi önce/sonra görüntü |
 | 2 | B — sabit test haritaları (metrik + görüntü kaydı, regresyon karşılaştırması) | her değişiklikte otomatik |
 | 3 | A — `assess_map` MCP aracı (kalite karnesi) | B ile aynı ölçütler |
 | 4 | C — `estimate_build` (süre/RAM/disk ön tahmini) | 5000² için tahmin ±%30 |

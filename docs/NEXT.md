@@ -108,3 +108,4 @@ MC 1.21.4 sunucu yükleme testi, kenar sönümü + harita dışı düz okyanus, 
 - 2026-11-19: Yol haritası yeniden sıralandı (9b → 13 → 14 → 10 → 15 → 16 → 17; 12 beklemede); öneriler A–F onay bekliyor.
 - 2026-11-19: Öneriler: A, E, F eklendi; D reddedildi; B, C açıklama bekliyor. Kullanım amacı kaydedildi.
 - 2026-11-19: B ve C de eklendi. Ana plan: kökteki `GOAL.md`.
+- 2026-11-19: Hedef sunucu 26.2 (eski istemciler Via ile). G (hedef sürüm desteği) GOAL.md'de ilk sıraya eklendi.
