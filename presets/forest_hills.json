@@ -1,0 +1,4 @@
+{"biomes": "on", "edge_falloff": 28, "description": "Rolling forested hills, no big mountains, small stream.",
+ "mountain_height": 28, "hill_amplitude": 14, "valley_width": 0.0, "noise_scale": 140,
+ "river_width": 5, "river_depth": 3, "tree_density": 0.85, "forest_coverage": 0.8,
+ "soil_ratio": 0.6, "rock_ratio": 0.3, "erosion": 0.7}

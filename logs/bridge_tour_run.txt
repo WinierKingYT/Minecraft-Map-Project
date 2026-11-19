@@ -1,0 +1,64 @@
+{"started": true, "seconds": 16.4, "log": "C:\\Users\\faruk\\Desktop\\mcmap\\Minecraft-Terrain-AI\\logs\\bridge_client.log"}
+[
+ {
+  "view": "overview",
+  "path": "C:\\Users\\faruk\\Desktop\\mcmap\\Minecraft-Terrain-AI\\exports\\fantasy_valley_256-4b401f7967e7\\previews\\ingame\\overview.png",
+  "settled": true,
+  "chunks": 837,
+  "size": [
+   1280,
+   720
+  ]
+ },
+ {
+  "view": "river",
+  "path": "C:\\Users\\faruk\\Desktop\\mcmap\\Minecraft-Terrain-AI\\exports\\fantasy_valley_256-4b401f7967e7\\previews\\ingame\\river.png",
+  "settled": true,
+  "chunks": 388,
+  "size": [
+   1280,
+   720
+  ]
+ },
+ {
+  "view": "mountain",
+  "path": "C:\\Users\\faruk\\Desktop\\mcmap\\Minecraft-Terrain-AI\\exports\\fantasy_valley_256-4b401f7967e7\\previews\\ingame\\mountain.png",
+  "settled": true,
+  "chunks": 624,
+  "size": [
+   1280,
+   720
+  ]
+ },
+ {
+  "view": "coast",
+  "path": "C:\\Users\\faruk\\Desktop\\mcmap\\Minecraft-Terrain-AI\\exports\\fantasy_valley_256-4b401f7967e7\\previews\\ingame\\coast.png",
+  "settled": true,
+  "chunks": 477,
+  "size": [
+   1280,
+   720
+  ]
+ },
+ {
+  "view": "meadow",
+  "path": "C:\\Users\\faruk\\Desktop\\mcmap\\Minecraft-Terrain-AI\\exports\\fantasy_valley_256-4b401f7967e7\\previews\\ingame\\meadow.png",
+  "settled": true,
+  "chunks": 297,
+  "size": [
+   1280,
+   720
+  ]
+ },
+ {
+  "view": "cave",
+  "path": "C:\\Users\\faruk\\Desktop\\mcmap\\Minecraft-Terrain-AI\\exports\\fantasy_valley_256-4b401f7967e7\\previews\\ingame\\cave.png",
+  "settled": true,
+  "chunks": 12,
+  "size": [
+   1280,
+   720
+  ]
+ }
+]
+{"stopped": true, "graceful": true}

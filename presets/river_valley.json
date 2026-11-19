@@ -1,0 +1,4 @@
+{"biomes": "on", "edge_falloff": 28, "description": "Wide, gentle river valley with broad floodplain and forested slopes.",
+ "mountain_height": 55, "valley_width": 0.8, "ridge_sharpness": 0.4, "erosion": 0.7, "hydraulic": 0.7,
+ "river_width": 14, "river_depth": 5, "river_meander": 0.16, "bank_width": 9,
+ "tree_density": 0.55, "forest_coverage": 0.55}

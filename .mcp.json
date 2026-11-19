@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "minecraft-terrain": {
+      "type": "stdio",
+      "command": "C:\\Users\\faruk\\Desktop\\mcmap\\Minecraft-Terrain-AI\\.venv\\Scripts\\python.exe",
+      "args": ["C:\\Users\\faruk\\Desktop\\mcmap\\Minecraft-Terrain-AI\\agent\\mcp_server.py"]
+    }
+  }
+}

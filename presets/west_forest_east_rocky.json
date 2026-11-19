@@ -1,0 +1,7 @@
+{"biomes": "on", "caves": 0.2, "description": "West half dense forest hills, east half stepped rocky cliffs; N-S river between, 32-block blend.",
+ "edge_falloff": 28, "erosion": 0.5, "noise_scale": 160, "valley_width": 0.45,
+ "river_width": 7, "river_depth": 3, "river_meander": 0.08,
+ "regions": [
+  {"shape": "half", "side": "west", "blend": 32, "preset": "forest_hills", "set": {"tree_density": 0.9}},
+  {"shape": "half", "side": "east", "blend": 32, "preset": "rocky_cliffs"}
+ ]}

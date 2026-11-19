@@ -1,0 +1,12 @@
+{
+  "_note": "Detected 2026-11-18 on the dev machine. Informational; nothing reads this at runtime.",
+  "os": "Windows 11 Pro 10.0.26200",
+  "cpu": "AMD Ryzen 7 7800X3D", "ram_gb": 31, "disk_free_gb": {"C": 406, "D": 1169},
+  "minecraft_launcher": "TLauncher (shared %APPDATA%/.minecraft)",
+  "minecraft_versions": ["26.2", "Fabric 1.21.4", "fabric-loader-0.19.5-1.21.4", "OptiFine 1.20.4", "OptiFine 1.21.11"],
+  "target_minecraft": "1.21.4",
+  "fabric_loader": "0.19.5", "fabric_api": "0.119.4+1.21.4",
+  "axiom": "6.1.5 for MC 1.21.4 (Modrinth, sha512 verified); breaks opsec -> separate mod set",
+  "worldpainter": "2.27.1 portable zip (Authenticode signed pepsoft.org); map format org.pepsoft.anvil.1.20.5",
+  "java": "Temurin 25.0.4", "python": "3.13.7 (+ .venv: numpy, pillow, nbtlib, pytest)", "git": "2.52.0"
+}

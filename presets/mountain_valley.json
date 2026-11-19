@@ -1,0 +1,3 @@
+{"biomes": "on", "caves": 0.3, "edge_falloff": 28, "description": "Deep valley between two high ridges, winding river, mixed forest.",
+ "mountain_height": 85, "noise_scale": 220, "valley_width": 0.6, "ridge_sharpness": 0.6, "erosion": 0.6, "hydraulic": 1.0,
+ "river_width": 9, "tree_density": 0.6, "forest_coverage": 0.6, "rock_ratio": 0.55}

@@ -1,0 +1,18 @@
+# environments / caches
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+# large or regenerable outputs
+exports/
+backups/
+logs/*.log
+# third-party binaries (download per README; not ours to redistribute)
+tools/
+axiom/instance/mods/*.jar
+tests/mc_server/
+# bridge build + dev client game dir (Mojang assets, saves, screenshots, auth token)
+bridge/.gradle/
+bridge/build/
+bridge/run/
+bridge/**/bin/

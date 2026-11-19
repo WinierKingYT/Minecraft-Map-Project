@@ -1,0 +1,11 @@
+{
+	"schemaVersion": 1,
+	"id": "terrain_bridge",
+	"version": "${version}",
+	"name": "Terrain AI Bridge",
+	"description": "Localhost-only HTTP bridge so a local agent can open worlds, move the camera and take screenshots.",
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": { "client": ["terrainai.bridge.BridgeMod"] },
+	"depends": { "fabricloader": ">=0.16", "minecraft": "~1.21.4", "java": ">=21", "fabric-api": "*" }
+}

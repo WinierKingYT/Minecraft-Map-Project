@@ -1,0 +1,4 @@
+{"biomes": "on", "caves": 0.4, "edge_falloff": 28, "description": "Stepped rocky cliffs and mesas with sparse trees.",
+ "biome": "rocky", "mountain_height": 80, "valley_width": 0.35, "cliffiness": 0.75, "terrace_step": 8,
+ "ridge_sharpness": 1.2, "erosion": 0.35, "hydraulic": 0.5, "river_width": 6, "tree_density": 0.3,
+ "forest_coverage": 0.35, "rock_ratio": 0.85}

@@ -1,0 +1,5 @@
+{"biomes": "on", "caves": 0.25, "edge_falloff": 28, "description": "First test map: fantasy natural forest valley, rising mountains on both sides, winding river.",
+ "biome": "fantasy_forest", "mountain_height": 64, "noise_scale": 230, "valley_width": 0.58, "ridge_sharpness": 0.35,
+ "warp_strength": 35, "erosion": 0.7, "hydraulic": 1.0, "river_width": 10, "river_depth": 4, "river_meander": 0.13,
+ "bank_width": 7, "tree_density": 0.7, "forest_coverage": 0.65, "rock_ratio": 0.3, "soil_ratio": 0.55,
+ "snow_line": 175, "tree_line": 150, "pine_line": 100}

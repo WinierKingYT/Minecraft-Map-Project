@@ -1,0 +1,1 @@
+{"date":"2026-11-19","source":"Claude Code get_usage (measured)","metric":"context_window_tokens_used","value":222917,"note":"whole setup session incl. research; per-call input/output not exposed"}
