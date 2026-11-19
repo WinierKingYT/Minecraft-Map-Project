@@ -82,9 +82,9 @@ MC 1.21.4 sunucu yükleme testi, kenar sönümü + harita dışı düz okyanus, 
 - `[✓ eklendi]` **E. Şematik dışa aktarma:** haritadan seçilen bölgeyi veya bir build'i `.schem` (WorldEdit/Axiom) olarak
   dışa aktarma; başka dünyalara yapıştırma.
 - `[✓ eklendi]` **F. Otomatik görev kaydı:** her görevde süre, araç çağrıları ve (sağlayıcı verirse) token sayısı `logs/`.
-- `[? açıklama bekliyor]` **B. Altın regresyon seti:** sabit örnek haritaların metrik+görüntüleri kayıtlı; her kod
+- `[✓ eklendi]` **B. Altın regresyon seti:** sabit örnek haritaların metrik+görüntüleri kayıtlı; her kod
   değişikliğinde karşılaştırılır → kalite geri gitmez.
-- `[? açıklama bekliyor]` **C. `estimate_build`:** büyük haritayı üretmeden önce "ne kadar sürer, ne kadar RAM/disk ister"
+- `[✓ eklendi]` **C. `estimate_build`:** büyük haritayı üretmeden önce "ne kadar sürer, ne kadar RAM/disk ister"
   tahmini (ör. 5000² için dakika ve GB) — yanlışlıkla saatlerce sürecek bir iş başlatmayı önler.
 - `[✗ reddedildi]` **D. Seed tarayıcı:** kullanım amacına uymuyor (seed seçimi önemsiz).
 
@@ -107,3 +107,4 @@ MC 1.21.4 sunucu yükleme testi, kenar sönümü + harita dışı düz okyanus, 
 - 2026-11-19: Faz 9 tamam (v0.11.0) — dere ağı + göller (WP `setWaterLevelAt`), export sonrası doğal objeler, 256² p90 düştü; verify %100, sunucu 60/60 ×3, oyun içi önce/sonra.
 - 2026-11-19: Yol haritası yeniden sıralandı (9b → 13 → 14 → 10 → 15 → 16 → 17; 12 beklemede); öneriler A–F onay bekliyor.
 - 2026-11-19: Öneriler: A, E, F eklendi; D reddedildi; B, C açıklama bekliyor. Kullanım amacı kaydedildi.
+- 2026-11-19: B ve C de eklendi. Ana plan: kökteki `GOAL.md`.
