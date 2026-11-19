@@ -49,28 +49,36 @@ MC 1.21.4 sunucu yükleme testi, kenar sönümü + harita dışı düz okyanus, 
 - Çözüldü (Faz 2'den): `hydraulic` 1024²'de eğimi artırıyordu → kaba hücre harita boyutuyla büyüyor, şev açısı hücreyle azalıyor;
   hidrolik geçiş artık tam haritayı tam çözünürlükte bellekte tutmuyor (parçalı ön-yükseklik, yalnız kaba ızgara).
 
-## Sıradaki (kullanıcının seçtiği sıra: 11 → 7 → 8 → 9 → 10; 12 sonra)
-- `[x]` **Faz 11 — canlı istemci köprüsü:** Fabric geliştirme istemcisi (Loom `runClient`, proje içi ayrı oyun klasörü) +
-  localhost köprü modu: dünya aç, kamera konumla, ekran görüntüsü al, komut çalıştır. Agent oyunu kendisi açıp kontrol eder.
-  Sonuç: `bridge/` + `agent/bridge_client.py` + 5 MCP aracı; fantasy_valley_256 turu 6 gerçek oyun içi görüntü (~40 sn, açılış ~16 sn),
-  `previews/ingame_fantasy_valley_256/`; kısa çimen, biyom renkleri ve mağara görüldü.
-- `[x]` **Faz 7 — oyun içi kontrol:** köprüyle otomatik ekran görüntüleri; çimen, biyom renkleri, mağaralar, kıyı, 4096² harita.
-  Sonuç (v0.9.0): 3 preset (256²) önce/sonra turu, `previews/phase7/`; çizgili çıplak kaya → saf blok karışımı + daha çok çimen,
-  kıyı duvarı → kumsal/kayalık kıyı karışımı, deniz 10 blok, "Not a string" düzeldi. 4096² oyun içi turu yapılmadı.
-  Kalan: en dik yamaçlar hâlâ geniş gri yüzeyler (geometri; Faz 9'daki dik yamaç işi).
-- `[x]` **Faz 8 — doğal dil komutu:** "batıya orman ekle" → `regions` JSON → MCP `generate`/`edit_world`; tek komut/skill.
-  Sonuç (v0.10.0): kural tabanlı `terrain_engine/intent.py` (AI yok), `plan` CLI, MCP `plan_terrain`/`build_from_plan`, skill
-  `.claude/skills/terrain`; tanınmayan → `unmatched`/`needs`. Uçtan uca: örnek 1 + revizyon "batıya orman, doğuya kayalık" →
-  verify %100, sunucu 52/52.
-- `[x]` **Faz 9 — görsel kalite:** nehir kolları ve göller, 256² dik yamaç p90'ı, özel ağaç objeleri, bitki `.layer` dosyaları.
-  Sonuç (v0.11.0): `tributaries`/`lakes` (`water.py`, WP kolon başına su seviyesi), `vegetation` (`decorate.py`, export sonrası
-  çiçek/çalı/kütük/kaya — WP bitki/obje katmanının belgeli script API'si yok); 256² p90 fantasy 57.2→54.2, mountain 60.1→57.2
-  (kapalı 56.7/61.7). verify %100 + sunucu 60/60 (2×256², 1024²); `previews/phase9/`. Kalan: kaya duvarları hâlâ geniş gri;
-  göller kazınmış çanak (doğal çukur yok); WP ağaç objeleri (`.bo2/.schem`) denenmedi.
-- `[ ]` **Faz 9b — su ağı düzeltmeleri:** 1024²+ haritalarda dereler fazla düz / dik açılı kırılıyor, göller derelere
-  boncuk gibi diziliyor; çiçek/çalı oranı dengesiz. (Oyun içi görüntü: `previews/phase9/mountain_valley_1024_overview_after.png`.)
-- `[ ]` **Faz 10 — edit-world v2:** düzenlenen alana ağaç/biyom yerleştirme, mağara tavanı koruması.
-- `[ ]` **Faz 12 — yapılar (sonra):** ev, kale, köy, dungeon. Şu an yalnızca arazi.
+## Sıradaki — kullanıcının onayladığı sıra (2026-11-19)
+1. `[ ]` **Faz 9b — su ağı düzeltmeleri:** 1024²+ haritalarda dereler fazla düz / dik açılı; göller derelere boncuk gibi
+   diziliyor; çiçek/çalı oranı dengesiz. Referans: `previews/phase9/mountain_valley_1024_overview_after.png`.
+2. `[ ]` **Faz 13 — kıta ve iklim planlayıcı:** kaba ölçekte kıta/okyanus, dağ zincirleri, nehir havzaları, sıcaklık+nem →
+   biyomlar; motor detayı bunun üzerine ekler. Büyük MMO haritasının asıl eksiği.
+3. `[ ]` **Faz 14 — görsel bölge editörü:** tarayıcıda harita önizlemesi üzerine fırça/çokgenle bölge çiz + preset seç →
+   `regions` JSON → üret. Koordinatı kimse elle yazmaz.
+4. `[ ]` **Faz 10 — edit-world v2:** düzenlenen alana ağaç/biyom/göl/dere/bitki, mağara tavanı koruması.
+5. `[ ]` **Faz 15 — preset galerisi:** üretilen haritaları seed+parametreyle yan yana önizle, beğenileni tek tıkla preset yap.
+6. `[ ]` **Faz 16 — kendi haritam:** kullanıcının gerçek haritasının KOPYASI üzerinde edit-world ile iyileştirme akışı.
+7. `[ ]` **Faz 17 — AI kullanım kılavuzu (model katmanlı skill):**
+   - Güçlü modeller (Opus, Fable): hedef + kısıtlar + araç listesi; nasıl yapacaklarına kendileri karar verir.
+   - Daha zayıf/ucuz modeller (DeepSeek, GPT vb.): adım adım tarif, kesin JSON şemaları, örnek girdi/çıktı, her adımda
+     kontrol listesi ve kabul ölçütü; serbest karar yerine `plan_terrain` + doğrulama araçları.
+   - Ortak: aynı MCP araçları; güvenlik ve doğrulama araçların içinde (zayıf model hatası dünyayı bozamaz);
+     kaliteyi model değil ölçütler belirler (aşağıdaki öneri A/B ile birlikte).
+   - Hedef: hangi model kullanılırsa kullanılsın aynı veya daha iyi kalite.
+- `[⏸]` **Faz 12 — yapılar:** ev, kale, köy, dungeon. Beklemede (henüz hazır değil).
+- `[⏸]` Distant Horizons / 8192²+ uyumu: sonraya.
+
+## Öneriler — kullanıcı onayı bekliyor
+- **A. `assess_map` MCP aracı:** nesnel kalite karnesi (eğim dağılımı, kaya/orman/su oranı, dikiş ve sel kontrolü,
+  isteğe bağlı oyun içi görüntü) → her model kaliteyi aynı ölçütle değerlendirir. Faz 17'nin temeli.
+- **B. Altın regresyon seti:** sabit seed+preset listesi, metrikleri ve görüntüleri kayıtlı; her değişiklikte
+  karşılaştırılır → kalite geri gitmez (hangi model kod yazarsa yazsın).
+- **C. `estimate_build` aracı (kuru çalıştırma):** üretimden önce süre/RAM/disk tahmini (4096² ≈ 11 dk, ~3 GB).
+- **D. Seed tarayıcı:** aynı plan için N seed'in küçük önizlemesi, AI çağrısız en iyisini seçme (ucuz).
+- **E. Bölgeyi şematik olarak dışa aktarma:** seçili alanı `.schem` (WorldEdit/Axiom) olarak çıkar → mevcut dünyalara
+  yapıştırma; Axiom entegrasyonunu gerçek kullanıma bağlar.
+- **F. Otomatik görev kaydı:** her görevde süre, araç çağrısı ve (sağlayıcı verirse) token sayısı `logs/` altına.
 
 ## Günlük
 - 2026-11-19: Faz 0 tamam. Fazlar alt ajanlarla sırayla yürütülecek (1+4 paralel, sonra 2, 3, 5, 6).
@@ -89,3 +97,4 @@ MC 1.21.4 sunucu yükleme testi, kenar sönümü + harita dışı düz okyanus, 
 - 2026-11-19: Faz 7 tamam (v0.9.0) — oyun içi önce/sonra: kaya karışımı, kıyı/deniz derinliği, "Not a string" (WP level.dat Player boyutu) düzeltildi; 127 test, verify %100, sunucu 52/52 ×3.
 - 2026-11-19: Faz 8 tamam (v0.10.0) — doğal dil → plan JSON (kural tabanlı, TR/EN), plan geçmişi + revizyon, MCP/CLI/skill; uçtan uca verify %100, sunucu 52/52.
 - 2026-11-19: Faz 9 tamam (v0.11.0) — dere ağı + göller (WP `setWaterLevelAt`), export sonrası doğal objeler, 256² p90 düştü; verify %100, sunucu 60/60 ×3, oyun içi önce/sonra.
+- 2026-11-19: Yol haritası yeniden sıralandı (9b → 13 → 14 → 10 → 15 → 16 → 17; 12 beklemede); öneriler A–F onay bekliyor.
