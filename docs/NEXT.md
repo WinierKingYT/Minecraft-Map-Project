@@ -69,16 +69,24 @@ MC 1.21.4 sunucu yükleme testi, kenar sönümü + harita dışı düz okyanus, 
 - `[⏸]` **Faz 12 — yapılar:** ev, kale, köy, dungeon. Beklemede (henüz hazır değil).
 - `[⏸]` Distant Horizons / 8192²+ uyumu: sonraya.
 
-## Öneriler — kullanıcı onayı bekliyor
-- **A. `assess_map` MCP aracı:** nesnel kalite karnesi (eğim dağılımı, kaya/orman/su oranı, dikiş ve sel kontrolü,
+## Kullanım amacı (kullanıcıdan, 2026-11-19)
+- Sıfırdan harita: düz dünya tabanı → üstüne arazi → arazinin içine evler/binalar/yapılar → iyileştirme.
+- Boyutlar çoğunlukla büyük: ~1000², 3000², 5000² (örnek; daha küçük de olabilir). Lobi veya MMO haritası:
+  kıtalar ve kıtalara uygun mekânlar. Seed seçimi kullanıcı için önemsiz (determinizm için motor içinde kalır).
+- Sonuç: Faz 13 (kıta/iklim) ve yapı yerleşimi için düz/hazır alanlar (Faz 12 hazırlığı) bu amaca göre tasarlanmalı;
+  3000²/5000² gibi 16'nın katı olmayan boyutlar en yakın 16 katına yuvarlanır.
+
+## Öneriler (2026-11-19 kararları)
+- `[✓ eklendi]` **A. `assess_map` MCP aracı:** nesnel kalite karnesi (eğim, kaya/orman/su oranı, dikiş/sel kontrolü,
   isteğe bağlı oyun içi görüntü) → her model kaliteyi aynı ölçütle değerlendirir. Faz 17'nin temeli.
-- **B. Altın regresyon seti:** sabit seed+preset listesi, metrikleri ve görüntüleri kayıtlı; her değişiklikte
-  karşılaştırılır → kalite geri gitmez (hangi model kod yazarsa yazsın).
-- **C. `estimate_build` aracı (kuru çalıştırma):** üretimden önce süre/RAM/disk tahmini (4096² ≈ 11 dk, ~3 GB).
-- **D. Seed tarayıcı:** aynı plan için N seed'in küçük önizlemesi, AI çağrısız en iyisini seçme (ucuz).
-- **E. Bölgeyi şematik olarak dışa aktarma:** seçili alanı `.schem` (WorldEdit/Axiom) olarak çıkar → mevcut dünyalara
-  yapıştırma; Axiom entegrasyonunu gerçek kullanıma bağlar.
-- **F. Otomatik görev kaydı:** her görevde süre, araç çağrısı ve (sağlayıcı verirse) token sayısı `logs/` altına.
+- `[✓ eklendi]` **E. Şematik dışa aktarma:** haritadan seçilen bölgeyi veya bir build'i `.schem` (WorldEdit/Axiom) olarak
+  dışa aktarma; başka dünyalara yapıştırma.
+- `[✓ eklendi]` **F. Otomatik görev kaydı:** her görevde süre, araç çağrıları ve (sağlayıcı verirse) token sayısı `logs/`.
+- `[? açıklama bekliyor]` **B. Altın regresyon seti:** sabit örnek haritaların metrik+görüntüleri kayıtlı; her kod
+  değişikliğinde karşılaştırılır → kalite geri gitmez.
+- `[? açıklama bekliyor]` **C. `estimate_build`:** büyük haritayı üretmeden önce "ne kadar sürer, ne kadar RAM/disk ister"
+  tahmini (ör. 5000² için dakika ve GB) — yanlışlıkla saatlerce sürecek bir iş başlatmayı önler.
+- `[✗ reddedildi]` **D. Seed tarayıcı:** kullanım amacına uymuyor (seed seçimi önemsiz).
 
 ## Günlük
 - 2026-11-19: Faz 0 tamam. Fazlar alt ajanlarla sırayla yürütülecek (1+4 paralel, sonra 2, 3, 5, 6).
@@ -98,3 +106,4 @@ MC 1.21.4 sunucu yükleme testi, kenar sönümü + harita dışı düz okyanus, 
 - 2026-11-19: Faz 8 tamam (v0.10.0) — doğal dil → plan JSON (kural tabanlı, TR/EN), plan geçmişi + revizyon, MCP/CLI/skill; uçtan uca verify %100, sunucu 52/52.
 - 2026-11-19: Faz 9 tamam (v0.11.0) — dere ağı + göller (WP `setWaterLevelAt`), export sonrası doğal objeler, 256² p90 düştü; verify %100, sunucu 60/60 ×3, oyun içi önce/sonra.
 - 2026-11-19: Yol haritası yeniden sıralandı (9b → 13 → 14 → 10 → 15 → 16 → 17; 12 beklemede); öneriler A–F onay bekliyor.
+- 2026-11-19: Öneriler: A, E, F eklendi; D reddedildi; B, C açıklama bekliyor. Kullanım amacı kaydedildi.
